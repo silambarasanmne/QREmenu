@@ -31,9 +31,13 @@ $app->addBodyParsingMiddleware();
 // Routes Definition
 // -------------------------------------------------------------------
 
-// Home Redirect
+// Home / Portal Page
 $app->get('/', function (Request $request, Response $response) {
-    return $response->withHeader('Location', '/table/1')->withStatus(302);
+    ob_start();
+    include __DIR__ . '/../src/Views/portal.php';
+    $html = ob_get_clean();
+    $response->getBody()->write($html);
+    return $response;
 });
 
 // Page 1: Customer Page
