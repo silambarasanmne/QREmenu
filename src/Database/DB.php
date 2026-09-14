@@ -17,6 +17,12 @@ class DB
 
             if ($driver === 'sqlite') {
                 $dbPath = $config['sqlite']['path'];
+                
+                // Vercel read-only filesystem workaround for SQLite
+                if (isset($_SERVER['VERCEL']) || getenv('VERCEL')) {
+                    $dbPath = '/tmp/database.sqlite';
+                }
+
                 $dbDir = dirname($dbPath);
                 if (!is_dir($dbDir)) {
                     mkdir($dbDir, 0777, true);

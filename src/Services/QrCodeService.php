@@ -52,6 +52,10 @@ class QrCodeService
 
     private static function saveToFile(string $filename, string $data, string $ext): void
     {
+        if (isset($_SERVER['VERCEL']) || getenv('VERCEL')) {
+            return; // Vercel has a read-only filesystem, skip file creation
+        }
+
         $dirs = [
             __DIR__ . '/../../public/qr_codes',
             __DIR__ . '/../../qr_codes'
@@ -59,9 +63,9 @@ class QrCodeService
 
         foreach ($dirs as $d) {
             if (!is_dir($d)) {
-                mkdir($d, 0777, true);
+                @mkdir($d, 0777, true);
             }
-            file_put_contents("{$d}/{$filename}.{$ext}", $data);
+            @file_put_contents("{$d}/{$filename}.{$ext}", $data);
         }
     }
 
