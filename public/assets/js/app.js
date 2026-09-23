@@ -1245,7 +1245,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 printWindow.document.close();
             });
         });
+
+        // Batch Add Multiple Tables Modal Handlers
+        const batchTableModal = document.getElementById('batch-table-modal');
+        const openBatchTableBtn = document.getElementById('btn-open-batch-table-modal');
+        const closeBatchTableBtn = document.getElementById('btn-close-batch-table-modal');
+
+        if (openBatchTableBtn && batchTableModal) {
+            openBatchTableBtn.addEventListener('click', () => {
+                batchTableModal.classList.remove('hidden');
+            });
+        }
+
+        if (closeBatchTableBtn && batchTableModal) {
+            closeBatchTableBtn.addEventListener('click', () => {
+                batchTableModal.classList.add('hidden');
+            });
+        }
+
+        document.querySelectorAll('.btn-count-preset').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const count = e.currentTarget.getAttribute('data-count');
+                const input = document.getElementById('table-count');
+                if (input) input.value = count;
+            });
+        });
     }
+
 
     // -------------------------------------------------------------
     // 7. Staff Login Form Logic (/login)

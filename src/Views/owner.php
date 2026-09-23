@@ -3,10 +3,22 @@ $title = "Owner Dashboard & Analytics";
 $bodyClass = "owner-page";
 $headerRightHtml = '<a href="/api/logout" class="btn btn-danger btn-sm"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>';
 
+$maxTableNum = 0;
+if (!empty($tables)) {
+    foreach ($tables as $t) {
+        if (preg_match('/(?:Table\s*)?(\d+)/i', $t['table_number'], $m)) {
+            $num = (int)$m[1];
+            if ($num > $maxTableNum) $maxTableNum = $num;
+        }
+    }
+}
+$nextTableStart = $maxTableNum + 1;
+
 // Pass Chart.js library to layout
 $extraJs = '<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>';
 
 ob_start();
+
 ?>
 
 <div class="owner-container">
@@ -443,32 +455,49 @@ ob_start();
 
 <!-- Batch Add Multiple Tables Modal -->
 <div id="batch-table-modal" class="modal-overlay hidden">
-    <div class="modal-content" style="max-width:440px;">
+    <div class="modal-content" style="max-width:480px;">
         <div class="modal-header">
-            <h3><i class="fa-solid fa-layer-group"></i> Batch Add Multiple Tables</h3>
+            <h3><i class="fa-solid fa-layer-group"></i> Create Multiple Tables</h3>
             <button id="btn-close-batch-table-modal" class="close-btn"><i class="fa-solid fa-xmark"></i></button>
         </div>
         <form action="/owner/table/create" method="POST">
             <div class="modal-body">
-                <div class="form-group">
-                    <label for="table-prefix"><i class="fa-solid fa-font"></i> Table Name Prefix</label>
-                    <input type="text" id="table-prefix" name="prefix" value="Table" required class="form-control" placeholder="e.g. Table or VIP Table">
+                <div class="alert alert-info" style="font-size:0.85rem; margin-bottom:16px;">
+                    <i class="fa-solid fa-circle-info"></i> <strong>Smart Auto-Naming:</strong> Currently you have <strong><?= count($tables) ?> tables</strong> (highest number: Table <?= $maxTableNum ?>). Creating new tables will start automatically from <strong>Table <?= $nextTableStart ?></strong>.
                 </div>
 
                 <div class="form-group">
-                    <label for="table-count"><i class="fa-solid fa-hashtag"></i> Quantity of New Tables to Add</label>
-                    <input type="number" id="table-count" name="count" value="5" min="1" max="50" required class="form-control" style="font-size:1.2rem; font-weight:700;">
-                    <small class="text-muted">Auto-detects current highest table number and generates sequential tables (e.g. Table 6, Table 7, Table 8...)</small>
+                    <label for="table-prefix"><i class="fa-solid fa-font"></i> Table Name Prefix</label>
+                    <input type="text" id="table-prefix" name="prefix" value="Table" required class="form-control" placeholder="e.g. Table, VIP, AC Hall">
+                </div>
+
+                <div class="form-group">
+                    <label for="table-count"><i class="fa-solid fa-hashtag"></i> How Many Tables to Create?</label>
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <input type="number" id="table-count" name="count" value="5" min="1" max="50" required class="form-control" style="font-size:1.3rem; font-weight:800; text-align:center;">
+                        <span style="font-weight:700; color:var(--text-muted);">tables</span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fa-solid fa-bolt"></i> Quick Quantity Presets:</label>
+                    <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                        <button type="button" class="btn btn-sm btn-outline btn-count-preset" data-count="3">+3 Tables</button>
+                        <button type="button" class="btn btn-sm btn-outline btn-count-preset" data-count="5">+5 Tables</button>
+                        <button type="button" class="btn btn-sm btn-outline btn-count-preset" data-count="10">+10 Tables</button>
+                        <button type="button" class="btn btn-sm btn-outline btn-count-preset" data-count="15">+15 Tables</button>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="submit" class="btn btn-warning btn-block btn-lg">
-                    <i class="fa-solid fa-bolt"></i> Generate Multiple Tables Now
+                    <i class="fa-solid fa-circle-plus"></i> Generate & Save Multiple Tables
                 </button>
             </div>
         </form>
     </div>
 </div>
+
 
 <?php
 $content = ob_get_clean();
