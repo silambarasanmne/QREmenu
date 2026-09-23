@@ -12,6 +12,13 @@ $customerMobile = $customerSession['mobile'] ?? '';
 $hasActiveOrder = !empty($activeOrder['has_active_order']);
 $allTables = Table::all();
 
+$getCatSlug = function($name) {
+    $slug = preg_replace('~[^\pL\d]+~u', '-', $name);
+    $slug = trim($slug, '-');
+    $slug = strtolower($slug);
+    return empty($slug) ? 'general' : $slug;
+};
+
 $headerRightHtml = '
     <div class="header-right-badges">
         ' . ($isLoggedIn ? '<span class="mobile-session-badge"><i class="fa-solid fa-phone"></i> +91 ' . htmlspecialchars($customerMobile) . '</span>' : '') . '
@@ -20,6 +27,7 @@ $headerRightHtml = '
 ';
 
 ob_start();
+
 ?>
 
 <!-- Customer Mobile OTP Verification Overlay (Appears if not logged in) -->
@@ -212,7 +220,7 @@ ob_start();
                 <i class="fa-solid fa-border-all"></i> All Menu
             </button>
             <?php foreach (array_keys($categories) as $catName): ?>
-                <button class="category-tab" data-category="<?= htmlspecialchars(strtolower($catName)) ?>">
+                <button class="category-tab" data-category="<?= htmlspecialchars($getCatSlug($catName)) ?>">
                     <?= htmlspecialchars($catName) ?>
                 </button>
             <?php endforeach; ?>
@@ -222,7 +230,8 @@ ob_start();
     <!-- Menu Items List Grouped by Category (Horizontal card layout matching reference) -->
     <div class="menu-grid">
         <?php foreach ($categories as $catName => $dishList): ?>
-            <div class="category-section" data-cat-section="<?= htmlspecialchars(strtolower($catName)) ?>">
+            <div class="category-section" data-cat-section="<?= htmlspecialchars($getCatSlug($catName)) ?>">
+
                 <h3 class="category-title"><?= htmlspecialchars($catName) ?></h3>
                 <div class="dishes-container">
                     <?php foreach ($dishList as $dish): ?>

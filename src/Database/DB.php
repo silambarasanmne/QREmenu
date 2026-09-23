@@ -121,31 +121,27 @@ class DB
         $check = $pdo->query("SELECT COUNT(*) FROM tables")->fetchColumn();
         if ($check == 0) {
             $stmtTable = $pdo->prepare("INSERT INTO tables (table_number, status) VALUES (?, 'available')");
-            foreach (['Table 1', 'Table 2', 'Table 3', 'Table 4', 'Table 5'] as $tName) {
+            foreach (SeedData::getTables() as $tName) {
                 $stmtTable->execute([$tName]);
             }
         }
 
-        // Seed default dishes (Indian Rupee ₹ Pricing)
+        // Seed default dishes (All 96 dishes across 12 categories)
         $checkDishes = $pdo->query("SELECT COUNT(*) FROM dishes")->fetchColumn();
-        if ($checkDishes == 0) {
-            $dishes = [
-                ['Paneer Tikka Starter', 'Tender paneer cubes marinated in rich Indian spices and grilled in a clay tandoor oven.', 220.00, 'Starters', 'https://images.unsplash.com/photo-1567188040759-fb8a883dc6d8?auto=format&fit=crop&w=400&q=80', 1],
-                ['Crispy Calamari Rings', 'Golden fried squid rings served with spicy garlic aioli and lemon wedges.', 280.00, 'Starters', 'https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?auto=format&fit=crop&w=400&q=80', 1],
-                ['Tomato Basil Soup', 'Velvety roasted tomato soup garnished with cream and served with buttered croutons.', 140.00, 'Starters', 'https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=400&q=80', 1],
-                ['Butter Chicken Special', 'Succulent chicken tikka pieces cooked in a rich, buttery tomato gravy with fresh cream.', 340.00, 'Mains', 'https://images.unsplash.com/photo-1588166524941-3bf61a9c41db?auto=format&fit=crop&w=400&q=80', 1],
-                ['Classic Dum Biryani', 'Fragrant Basmati rice slow-cooked with aromatic spices, fresh mint, and tender meat or veg.', 290.00, 'Mains', 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?auto=format&fit=crop&w=400&q=80', 1],
-                ['Paneer Butter Masala', 'Fresh cottage cheese cubes simmered in a mildly spicy tomato-cashew nut gravy.', 260.00, 'Mains', 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&w=400&q=80', 1],
-                ['Gulab Jamun with Ice Cream', 'Warm golden milk dumplings served with chilled vanilla bean ice cream.', 120.00, 'Desserts', 'https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?auto=format&fit=crop&w=400&q=80', 1],
-                ['Saffron Rasmalai', 'Soft cottage cheese patties soaked in chilled saffron-infused milk and cardamom.', 130.00, 'Desserts', 'https://images.unsplash.com/photo-1533134242443-d4fd215305ad?auto=format&fit=crop&w=400&q=80', 1],
-                ['Mango Lassi', 'Chilled sweet yogurt smoothie blended with ripe Alphonso mango puree.', 90.00, 'Beverages', 'https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&w=400&q=80', 1],
-                ['Masala Chai', 'Traditional Indian spiced tea brewed with fresh ginger, cardamom, and milk.', 50.00, 'Beverages', 'https://images.unsplash.com/photo-1534778101976-62847782c213?auto=format&fit=crop&w=400&q=80', 1]
-            ];
-
+        if ($checkDishes < 50) {
+            $pdo->exec("DELETE FROM dishes");
             $stmt = $pdo->prepare("INSERT INTO dishes (name, description, price, category, image_url, is_available) VALUES (?, ?, ?, ?, ?, ?)");
-            foreach ($dishes as $d) {
-                $stmt->execute($d);
+            foreach (SeedData::getDishes() as $d) {
+                $stmt->execute([
+                    $d['name'],
+                    $d['description'],
+                    $d['price'],
+                    $d['category'],
+                    $d['image_url'] ?? null,
+                    $d['is_available'] ?? 1
+                ]);
             }
         }
     }
 }
+

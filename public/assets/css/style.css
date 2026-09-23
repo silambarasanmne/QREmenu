@@ -2368,4 +2368,49 @@ input:checked + .slider:before { transform: translateX(20px); }
     font-size: 0.85rem;
 }
 
+/* Header Right Badges for Mobile & Desktop */
+.header-right-badges {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.mobile-session-badge {
+    background: rgba(234, 179, 8, 0.15);
+    color: var(--emenu-gold);
+    border: 1px solid rgba(234, 179, 8, 0.3);
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.table-badge {
+    background: linear-gradient(135deg, var(--emenu-gold), #d97706);
+    color: #ffffff;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 800;
+    box-shadow: 0 2px 8px rgba(234, 179, 8, 0.3);
+    white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+    .header-right-badges {
+        gap: 4px;
+    }
+    .mobile-session-badge {
+        font-size: 0.7rem;
+        padding: 3px 8px;
+    }
+    .table-badge {
+        font-size: 0.72rem;
+        padding: 3px 8px;
+    }
+}
+
+
 
