@@ -403,6 +403,89 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
+        // Customer Bill Modal & Request Bill
+        const btnOpenRequestBillModal = document.getElementById('btn-open-request-bill-modal');
+        const customerBillModal = document.getElementById('customer-bill-modal');
+        const btnCloseCustomerBillModal = document.getElementById('btn-close-customer-bill-modal');
+        const btnSubmitBillRequest = document.getElementById('btn-submit-bill-request');
+        const customerThankyouModal = document.getElementById('customer-thankyou-modal');
+        const btnRestartDiningSession = document.getElementById('btn-restart-dining-session');
+
+        let lastKnownSessionTotal = 0;
+        let wasInOccupiedSession = false;
+
+        if (btnOpenRequestBillModal) {
+            btnOpenRequestBillModal.addEventListener('click', () => {
+                renderCustomerBillModal();
+                customerBillModal.classList.remove('hidden');
+            });
+        }
+
+        if (btnCloseCustomerBillModal) {
+            btnCloseCustomerBillModal.addEventListener('click', () => {
+                customerBillModal.classList.add('hidden');
+            });
+        }
+
+        if (btnSubmitBillRequest) {
+            btnSubmitBillRequest.addEventListener('click', async () => {
+                btnSubmitBillRequest.disabled = true;
+                btnSubmitBillRequest.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Intimating Waiter...';
+
+                try {
+                    const res = await fetch(`/api/table/${window.TABLE_ID}/request-bill`, { method: 'POST' });
+                    const data = await res.json();
+                    if (data.success) {
+                        showToast('Waiter intimated for bill collection!', 'success');
+                        document.getElementById('bill-request-status-badge').classList.remove('hidden');
+                    } else {
+                        showToast('Failed to send request', 'error');
+                    }
+                } catch (e) {
+                    showToast('Connection error', 'error');
+                } finally {
+                    btnSubmitBillRequest.disabled = false;
+                    btnSubmitBillRequest.innerHTML = '<i class="fa-solid fa-bell"></i> Intimate Waiter for Bill & Payment';
+                }
+            });
+        }
+
+        if (btnRestartDiningSession) {
+            btnRestartDiningSession.addEventListener('click', () => {
+                customerThankyouModal.classList.add('hidden');
+                window.location.reload();
+            });
+        }
+
+        function renderCustomerBillModal() {
+            const listEl = document.getElementById('customer-bill-items-list');
+            const totalEl = document.getElementById('customer-bill-total-price');
+            listEl.innerHTML = '';
+
+            if (window.LATEST_SESSION_ITEMS && window.LATEST_SESSION_ITEMS.length > 0) {
+                let total = 0;
+                window.LATEST_SESSION_ITEMS.forEach(it => {
+                    const subtotal = parseFloat(it.price_at_order) * parseInt(it.quantity);
+                    total += subtotal;
+                    const row = document.createElement('div');
+                    row.className = 'cart-item-card';
+                    row.innerHTML = `
+                        <div class="cart-item-details">
+                            <div class="cart-item-name">${it.quantity}x ${it.dish_name}</div>
+                            <div class="cart-item-price">₹${parseFloat(it.price_at_order).toFixed(2)} each</div>
+                        </div>
+                        <strong>₹${subtotal.toFixed(2)}</strong>
+                    `;
+                    listEl.appendChild(row);
+                });
+                totalEl.textContent = `₹${total.toFixed(2)}`;
+                lastKnownSessionTotal = total;
+            } else {
+                listEl.innerHTML = '<p class="text-muted text-center">No active dishes ordered in this session yet.</p>';
+                totalEl.textContent = '₹0.00';
+            }
+        }
+
         // Real-time Short Polling for Customer Order Status
         async function pollCustomerOrderStatus() {
             try {
@@ -412,10 +495,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 const trackerContainer = document.getElementById('order-tracker-container');
                 if (data.has_active_order && data.order) {
                     const order = data.order;
+                    wasInOccupiedSession = true;
                     trackerContainer.classList.remove('hidden');
 
                     document.getElementById('tracker-order-id').textContent = `Order #${order.id}`;
-                    
+                    window.CURRENT_ORDER_ID = order.id;
+                    window.LATEST_SESSION_ITEMS = order.session_items || order.items || [];
+                    lastKnownSessionTotal = parseFloat(order.session_total || order.total_amount || 0);
+
                     // Stepper state updates
                     const steps = ['placed', 'accepted', 'ready', 'served'];
                     const currentIdx = steps.indexOf(order.status);
@@ -445,8 +532,21 @@ document.addEventListener('DOMContentLoaded', () => {
                             break;
                     }
                     msgEl.innerHTML = msg;
-                } else if (!window.CURRENT_ORDER_ID) {
+
+                    if (data.bill_requested) {
+                        const statusBadge = document.getElementById('bill-request-status-badge');
+                        if (statusBadge) statusBadge.classList.remove('hidden');
+                    }
+                } else {
                     trackerContainer.classList.add('hidden');
+                    if (wasInOccupiedSession && data.table_status === 'available') {
+                        wasInOccupiedSession = false;
+                        if (customerBillModal) customerBillModal.classList.add('hidden');
+                        const paidTotalEl = document.getElementById('thankyou-paid-total');
+                        if (paidTotalEl) paidTotalEl.textContent = `₹${lastKnownSessionTotal.toFixed(2)}`;
+                        if (customerThankyouModal) customerThankyouModal.classList.remove('hidden');
+                        playNotificationSound();
+                    }
                 }
             } catch (e) {
                 console.error('Customer poll error', e);
@@ -641,6 +741,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     else occCount++;
 
                     const isReady = t.has_ready_order;
+                    const isBillRequested = t.bill_requested == 1;
 
                     if (isReady) {
                         readyCount++;
@@ -663,12 +764,31 @@ document.addEventListener('DOMContentLoaded', () => {
                         readyAlertsContainer.appendChild(alertCard);
                     }
 
+                    if (isBillRequested) {
+                        const billAlertCard = document.createElement('div');
+                        billAlertCard.className = 'ready-alert-card';
+                        billAlertCard.style.borderColor = '#f59e0b';
+                        billAlertCard.style.background = '#fefce8';
+                        billAlertCard.innerHTML = `
+                            <div class="ready-alert-info">
+                                <h3 style="color:#854d0e;"><i class="fa-solid fa-receipt pulse-icon"></i> ${t.table_number} - BILL REQUESTED BY CUSTOMER!</h3>
+                                <p style="color:#a16207;">Customer requested final bill settlement. Total: <strong>₹${parseFloat(t.session_total || 0).toFixed(2)}</strong></p>
+                            </div>
+                            <button class="btn btn-warning btn-open-close-bill" data-table-id="${t.id}">
+                                <i class="fa-solid fa-file-invoice-dollar"></i> Collect Bill & Pay
+                            </button>
+                        `;
+                        readyAlertsContainer.appendChild(billAlertCard);
+                    }
+
                     const tableCard = document.createElement('div');
-                    tableCard.className = `table-card ${t.status} ${isReady ? 'has-ready-order' : ''}`;
+                    tableCard.className = `table-card ${t.status} ${isReady ? 'has-ready-order' : ''} ${isBillRequested ? 'has-bill-request' : ''}`;
 
                     let statusBadge = t.status === 'available' 
                         ? '<span class="badge badge-success">Available</span>'
-                        : '<span class="badge badge-warning">Occupied</span>';
+                        : (isBillRequested
+                            ? '<span class="badge badge-warning pulse-text" style="background:#f59e0b; color:#fff;"><i class="fa-solid fa-bell"></i> Bill Requested</span>'
+                            : '<span class="badge badge-warning">Occupied</span>');
 
                     let activeOrderHtml = '<p class="text-muted small">No active orders</p>';
                     let actionsHtml = '';
@@ -705,7 +825,11 @@ document.addEventListener('DOMContentLoaded', () => {
                             actionsHtml += `<button class="btn btn-success btn-sm btn-block btn-serve-order" data-order-id="${readyOrderId}"><i class="fa-solid fa-check"></i> Mark Dish Served</button>`;
                         }
 
-                        actionsHtml += `<button class="btn btn-primary btn-sm btn-block btn-open-close-bill" data-table-id="${t.id}" style="margin-top:6px;"><i class="fa-solid fa-file-invoice-dollar"></i> Close Bill & Pay (₹${parseFloat(t.session_total || 0).toFixed(2)})</button>`;
+                        if (t.can_close_bill) {
+                            actionsHtml += `<button class="btn btn-primary btn-sm btn-block btn-open-close-bill" data-table-id="${t.id}" style="margin-top:6px;"><i class="fa-solid fa-file-invoice-dollar"></i> Close Bill & Pay (₹${parseFloat(t.session_total || 0).toFixed(2)})</button>`;
+                        } else {
+                            actionsHtml += `<button class="btn btn-secondary btn-sm btn-block" disabled style="margin-top:6px; opacity:0.75; cursor:not-allowed;"><i class="fa-solid fa-fire-burner"></i> Kitchen Preparing Food (Bill Locked)</button>`;
+                        }
                     }
 
                     tableCard.innerHTML = `
@@ -835,7 +959,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // -------------------------------------------------------------
-    // 6. Owner Page Logic (/owner)
+    // 6. Owner Page Logic (/owner & /admin)
     // -------------------------------------------------------------
     if (document.body.classList.contains('owner-page')) {
         const ownerTabs = document.querySelectorAll('.owner-tab');
@@ -849,6 +973,166 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById(targetId).classList.add('active');
             });
         });
+
+        if (window.location.hash) {
+            const hash = window.location.hash.substring(1);
+            const targetTab = document.querySelector(`.owner-tab[data-target="tab-${hash}"]`);
+            if (targetTab) {
+                targetTab.click();
+            }
+        }
+
+        // Real-Time Polling for Owner Analytics & Recent Orders
+        async function pollOwnerStats() {
+            try {
+                const res = await fetch('/api/owner/stats');
+                if (!res.ok) return;
+                const data = await res.json();
+                if (!data.success || !data.stats) return;
+
+                const s = data.stats;
+
+                // Update metric cards
+                const elRev = document.getElementById('owner-total-revenue');
+                if (elRev) elRev.textContent = `₹${parseFloat(s.total_revenue).toFixed(2)}`;
+
+                const elOrd = document.getElementById('owner-total-orders');
+                if (elOrd) elOrd.textContent = s.total_orders;
+
+                const elAvg = document.getElementById('owner-avg-order-value');
+                if (elAvg) elAvg.textContent = `₹${parseFloat(s.avg_order_value).toFixed(2)}`;
+
+                const elRevToday = document.getElementById('owner-revenue-today');
+                if (elRevToday) elRevToday.textContent = `₹${parseFloat(s.revenue_today).toFixed(2)}`;
+
+                const elOrdToday = document.getElementById('owner-orders-today');
+                if (elOrdToday) elOrdToday.textContent = `${s.orders_today} orders today`;
+
+                if (s.table_metrics) {
+                    const elOcc = document.getElementById('owner-table-occupancy');
+                    if (elOcc) elOcc.textContent = `${s.table_metrics.occupancy_rate}%`;
+
+                    const elOccSub = document.getElementById('owner-table-occupancy-sub');
+                    if (elOccSub) elOccSub.textContent = `${s.table_metrics.occupied_tables} of ${s.table_metrics.total_tables} tables occupied`;
+                }
+
+                // Update Recent Orders container with Live Auto Refresh & Item Breakdown
+                const recentContainer = document.getElementById('owner-recent-orders-container');
+                if (recentContainer && s.recent_orders) {
+                    if (s.recent_orders.length === 0) {
+                        recentContainer.innerHTML = `
+                            <div class="card-header-flex">
+                                <h3><i class="fa-solid fa-clock-rotate-left text-primary"></i> Live Recent Orders</h3>
+                                <span class="badge badge-success"><i class="fa-solid fa-rotate"></i> Auto Refresh</span>
+                            </div>
+                            <p class="text-muted p-4">No orders found.</p>`;
+                    } else {
+                        let html = `
+                            <div class="card-header-flex">
+                                <h3><i class="fa-solid fa-clock-rotate-left text-primary"></i> Live Recent Orders</h3>
+                                <span class="badge badge-success"><i class="fa-solid fa-rotate"></i> Auto Refresh</span>
+                            </div>
+                            <div class="recent-orders-list">`;
+
+                        s.recent_orders.forEach(ord => {
+                            const dateObj = new Date(ord.created_at);
+                            const dateStr = isNaN(dateObj) ? ord.created_at : dateObj.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
+
+                            let itemsHtml = '';
+                            if (ord.items && ord.items.length > 0) {
+                                itemsHtml = '<div class="ro-items-summary">';
+                                ord.items.forEach(item => {
+                                    const itemTotal = (parseFloat(item.price_at_order) * parseInt(item.quantity)).toFixed(2);
+                                    itemsHtml += `
+                                        <div class="ro-item-line">
+                                            <span class="ro-item-name">• ${item.name}</span>
+                                            <span class="ro-item-qty">x${item.quantity}</span>
+                                            <span class="ro-item-price">₹${itemTotal}</span>
+                                        </div>`;
+                                });
+                                itemsHtml += '</div>';
+                            }
+
+                            html += `
+                                <div class="recent-order-item">
+                                    <div class="ro-header">
+                                        <span class="ro-table"><i class="fa-solid fa-chair"></i> ${ord.table_number}</span>
+                                        <span class="badge badge-status-${ord.status}">${ord.status.toUpperCase()}</span>
+                                    </div>
+                                    ${itemsHtml}
+                                    <div class="ro-meta">
+                                        <span>Order #${ord.id}</span> &bull;
+                                        <strong>Total: ₹${parseFloat(ord.total_amount).toFixed(2)}</strong> &bull;
+                                        <small>${dateStr}</small>
+                                    </div>
+                                </div>`;
+                        });
+
+                        html += `</div>`;
+                        recentContainer.innerHTML = html;
+                    }
+                }
+            } catch (e) {
+                // Silent catch on poll error
+            }
+        }
+
+        pollOwnerStats();
+        setInterval(pollOwnerStats, 5000);
+
+        // CSV Export functionality
+        const btnExportCsv = document.getElementById('btn-export-csv');
+        if (btnExportCsv) {
+            btnExportCsv.addEventListener('click', () => {
+                if (!window.INITIAL_STATS) return;
+                const s = window.INITIAL_STATS;
+                
+                let csvContent = "data:text/csv;charset=utf-8,";
+                csvContent += "REPORT: RESTAURANT REVENUE & SALES SUMMARY\n";
+                csvContent += `Generated At,${new Date().toLocaleString()}\n\n`;
+                
+                csvContent += "METRICS SUMMARY\n";
+                csvContent += `Total Revenue,₹${s.total_revenue}\n`;
+                csvContent += `Total Served Orders,${s.total_orders}\n`;
+                csvContent += `Average Order Value,₹${s.avg_order_value}\n`;
+                csvContent += `Revenue Today,₹${s.revenue_today}\n\n`;
+
+                csvContent += "CATEGORY SALES BREAKDOWN\n";
+                csvContent += "Category,Items Sold,Revenue (₹),Share (%)\n";
+                if (s.category_breakdown) {
+                    s.category_breakdown.forEach(c => {
+                        csvContent += `"${c.category}",${c.items_sold},${c.category_revenue},${c.percentage}%\n`;
+                    });
+                }
+
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", `revenue_report_${new Date().toISOString().slice(0,10)}.csv`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+        }
+
+
+
+        // Batch Add Tables Modal
+        const batchTableModal = document.getElementById('batch-table-modal');
+        const openBatchTableModalBtn = document.getElementById('btn-open-batch-table-modal');
+        const closeBatchTableModalBtn = document.getElementById('btn-close-batch-table-modal');
+
+        if (openBatchTableModalBtn) {
+            openBatchTableModalBtn.addEventListener('click', () => {
+                if (batchTableModal) batchTableModal.classList.remove('hidden');
+            });
+        }
+
+        if (closeBatchTableModalBtn) {
+            closeBatchTableModalBtn.addEventListener('click', () => {
+                if (batchTableModal) batchTableModal.classList.add('hidden');
+            });
+        }
 
         document.querySelectorAll('.toggle-availability').forEach(chk => {
             chk.addEventListener('change', async (e) => {
@@ -900,12 +1184,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const openDishModalBtn = document.getElementById('btn-open-dish-modal');
         const closeDishModalBtn = document.getElementById('btn-close-dish-modal');
 
+        document.querySelectorAll('.btn-preset-img').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const url = e.currentTarget.getAttribute('data-url');
+                document.getElementById('dish-image-url').value = url;
+                showToast('Sample image URL applied', 'info');
+            });
+        });
+
         if (openDishModalBtn) {
             openDishModalBtn.addEventListener('click', () => {
                 document.getElementById('modal-dish-title').textContent = 'Add New Dish';
                 document.getElementById('dish-id').value = '';
                 document.getElementById('dish-name').value = '';
-                document.getElementById('dish-category').value = 'Starters';
+                document.getElementById('dish-category').value = 'Starters & Soups';
                 document.getElementById('dish-price').value = '';
                 document.getElementById('dish-description').value = '';
                 document.getElementById('dish-image-url').value = '';

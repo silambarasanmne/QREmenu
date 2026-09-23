@@ -108,9 +108,23 @@ class OwnerController
 
         $body = $request->getParsedBody();
         $tableNumber = trim($body['table_number'] ?? '');
+        $count = isset($body['count']) ? max(1, (int)$body['count']) : 1;
+        $prefix = trim($body['prefix'] ?? 'Table');
 
-        if (!empty($tableNumber)) {
-            Table::create($tableNumber);
+        if ($count > 1) {
+            Table::createMultiple($count, $prefix);
+        } elseif (!empty($tableNumber)) {
+            if (str_contains($tableNumber, ',')) {
+                $names = explode(',', $tableNumber);
+                foreach ($names as $name) {
+                    $clean = trim($name);
+                    if (!empty($clean)) {
+                        try { Table::create($clean); } catch (\Exception $e) {}
+                    }
+                }
+            } else {
+                Table::create($tableNumber);
+            }
         }
 
         return $response->withHeader('Location', '/owner#tables')->withStatus(302);

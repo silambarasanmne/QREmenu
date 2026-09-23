@@ -53,6 +53,25 @@ class WaiterController
         }
 
         $tableId = (int)$args['id'];
+
+        // Enforce rule: Close bill is only allowed after kitchen marks dishes ready & waiter marks served
+        $overview = Order::getWaiterOverview();
+        $targetTable = null;
+        foreach ($overview as $t) {
+            if ($t['id'] === $tableId) {
+                $targetTable = $t;
+                break;
+            }
+        }
+
+        if ($targetTable && empty($targetTable['can_close_bill'])) {
+            $response->getBody()->write(json_encode([
+                'success' => false,
+                'error' => 'Cannot close bill yet! Kitchen is preparing food or dishes are waiting to be marked served.'
+            ]));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+        }
+
         $body = $request->getParsedBody() ?? json_decode($request->getBody()->getContents(), true);
         $paymentMethod = $body['payment_method'] ?? 'cash';
 

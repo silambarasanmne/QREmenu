@@ -7,9 +7,27 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use App\Models\Order;
 use App\Models\Table;
 use App\Services\AuthService;
+use App\Services\RevenueService;
 
 class ApiController
 {
+    public function getOwnerStats(Request $request, Response $response): Response
+    {
+        if (!AuthService::checkSession('owner')) {
+            $response->getBody()->write(json_encode(['success' => false, 'error' => 'Unauthorized']));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(401);
+        }
+
+        $params = $request->getQueryParams();
+        $startDate = $params['start_date'] ?? null;
+        $endDate = $params['end_date'] ?? null;
+
+        $stats = RevenueService::getDashboardStats($startDate, $endDate);
+
+        $response->getBody()->write(json_encode(['success' => true, 'stats' => $stats]));
+        return $response->withHeader('Content-Type', 'application/json');
+    }
+
     public function sendOtp(Request $request, Response $response): Response
     {
         $body = $request->getParsedBody() ?? json_decode($request->getBody()->getContents(), true);
@@ -41,12 +59,28 @@ class ApiController
         $tableId = (int)$args['table_id'];
         $activeOrder = Order::getActiveOrderForTable($tableId);
 
+        $hasActiveOrder = !empty($activeOrder['has_active_order']);
+
         $data = [
-            'has_active_order' => $activeOrder !== null,
-            'order' => $activeOrder
+            'has_active_order' => $hasActiveOrder,
+            'order' => $activeOrder,
+            'table_status' => $activeOrder['table_status'] ?? 'available',
+            'bill_requested' => !empty($activeOrder['bill_requested'])
         ];
 
         $response->getBody()->write(json_encode($data));
+        return $response->withHeader('Content-Type', 'application/json');
+    }
+
+    public function requestBill(Request $request, Response $response, array $args): Response
+    {
+        $tableId = (int)$args['table_id'];
+        $success = Table::requestBill($tableId);
+
+        $response->getBody()->write(json_encode([
+            'success' => $success,
+            'message' => 'Bill request intimate sent to waiter'
+        ]));
         return $response->withHeader('Content-Type', 'application/json');
     }
 
@@ -91,6 +125,20 @@ class ApiController
         }
 
         $response->getBody()->write(json_encode(['success' => false, 'error' => 'Invalid PIN or password']));
+        return $response->withHeader('Content-Type', 'application/json')->withStatus(401);
+    }
+
+    public function unlockAnalytics(Request $request, Response $response): Response
+    {
+        $body = $request->getParsedBody() ?? json_decode($request->getBody()->getContents(), true);
+        $password = $body['password'] ?? '';
+
+        if (AuthService::unlockAnalytics($password)) {
+            $response->getBody()->write(json_encode(['success' => true, 'message' => 'Analytics unlocked successfully']));
+            return $response->withHeader('Content-Type', 'application/json');
+        }
+
+        $response->getBody()->write(json_encode(['success' => false, 'error' => 'Invalid Owner Password']));
         return $response->withHeader('Content-Type', 'application/json')->withStatus(401);
     }
 

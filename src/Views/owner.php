@@ -3,6 +3,9 @@ $title = "Owner Dashboard & Analytics";
 $bodyClass = "owner-page";
 $headerRightHtml = '<a href="/api/logout" class="btn btn-danger btn-sm"><i class="fa-solid fa-right-from-bracket"></i> Logout</a>';
 
+// Pass Chart.js library to layout
+$extraJs = '<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>';
+
 ob_start();
 ?>
 
@@ -10,55 +13,82 @@ ob_start();
     <!-- Owner Top Navigation Tabs -->
     <div class="owner-tabs">
         <button class="owner-tab active" data-target="tab-analytics">
-            <i class="fa-solid fa-chart-line"></i> Revenue & Analytics
+            <i class="fa-solid fa-chart-pie"></i> Revenue & Analytics
         </button>
         <button class="owner-tab" data-target="tab-dishes">
             <i class="fa-solid fa-utensils"></i> Menu Management
         </button>
         <button class="owner-tab" data-target="tab-tables">
-            <i class="fa-solid fa-qrcode"></i> Table & QR Codes
+            <i class="fa-solid fa-qrcode"></i> Tables & QR Codes
         </button>
     </div>
 
     <!-- TAB 1: Revenue & Analytics -->
     <div id="tab-analytics" class="owner-tab-content active">
-        <!-- Date Range Filter Form -->
+        <!-- Analytics Header & Action Bar -->
+        <div class="analytics-header-card card">
+            <div class="analytics-header-left">
+                <h2><i class="fa-solid fa-chart-line text-primary"></i> Revenue & Business Analytics</h2>
+                <p class="text-muted">Real-time financial performance, category shares, and peak dining insights.</p>
+            </div>
+            
+            <div class="analytics-header-right">
+                <button type="button" class="btn btn-outline btn-sm" onclick="window.print()">
+                    <i class="fa-solid fa-print"></i> Print Report
+                </button>
+                <button type="button" id="btn-export-csv" class="btn btn-success btn-sm">
+                    <i class="fa-solid fa-file-csv"></i> Export CSV
+                </button>
+            </div>
+        </div>
+
+        <!-- Date Range Presets & Filter Bar -->
         <div class="card filter-card">
-            <form method="GET" action="/owner" class="date-filter-form">
-                <div class="form-group-inline">
-                    <label><i class="fa-solid fa-calendar-day"></i> Filter Date Range:</label>
-                    <input type="date" name="start_date" value="<?= htmlspecialchars($stats['start_date'] ?? '') ?>" class="form-control">
+            <form method="GET" action="/owner" class="date-filter-form" id="owner-date-filter-form">
+                <div class="filter-presets-group">
+                    <span class="filter-label"><i class="fa-solid fa-calendar-days"></i> Quick Presets:</span>
+                    <a href="/owner" class="preset-btn <?= (empty($stats['start_date']) && empty($stats['end_date'])) ? 'active' : '' ?>">All Time</a>
+                    <a href="/owner?start_date=<?= date('Y-m-d') ?>&end_date=<?= date('Y-m-d') ?>" class="preset-btn <?= ($stats['start_date'] === date('Y-m-d') && $stats['end_date'] === date('Y-m-d')) ? 'active' : '' ?>">Today</a>
+                    <a href="/owner?start_date=<?= date('Y-m-d', strtotime('-7 days')) ?>&end_date=<?= date('Y-m-d') ?>" class="preset-btn">Last 7 Days</a>
+                    <a href="/owner?start_date=<?= date('Y-m-01') ?>&end_date=<?= date('Y-m-t') ?>" class="preset-btn">This Month</a>
+                </div>
+
+                <div class="form-group-inline date-custom-range">
+                    <label>Custom:</label>
+                    <input type="date" name="start_date" value="<?= htmlspecialchars($stats['start_date'] ?? '') ?>" class="form-control form-control-sm">
                     <span>to</span>
-                    <input type="date" name="end_date" value="<?= htmlspecialchars($stats['end_date'] ?? '') ?>" class="form-control">
-                    <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-filter"></i> Apply Filter</button>
-                    <a href="/owner" class="btn btn-outline btn-sm">Reset</a>
+                    <input type="date" name="end_date" value="<?= htmlspecialchars($stats['end_date'] ?? '') ?>" class="form-control form-control-sm">
+                    <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-filter"></i> Filter</button>
                 </div>
             </form>
         </div>
 
-        <!-- Metrics Summary Cards -->
+        <!-- Metrics Summary Cards Grid -->
         <div class="stats-cards-grid">
             <div class="stat-card primary">
                 <div class="stat-icon"><i class="fa-solid fa-indian-rupee-sign"></i></div>
                 <div class="stat-info">
                     <span class="stat-label">Total Revenue</span>
-                    <h3 class="stat-value">₹<?= number_format($stats['total_revenue'], 2) ?></h3>
+                    <h3 class="stat-value" id="owner-total-revenue">₹<?= number_format($stats['total_revenue'], 2) ?></h3>
+                    <small class="stat-subtext"><i class="fa-solid fa-circle-check text-success"></i> Served & Paid Sales</small>
                 </div>
             </div>
 
             <div class="stat-card success">
                 <div class="stat-icon"><i class="fa-solid fa-receipt"></i></div>
                 <div class="stat-info">
-                    <span class="stat-label">Served Orders</span>
-                    <h3 class="stat-value"><?= $stats['total_orders'] ?></h3>
+                    <span class="stat-label">Total Paid Orders</span>
+                    <h3 class="stat-value" id="owner-total-orders"><?= $stats['total_orders'] ?></h3>
+                    <small class="stat-subtext">Completed transactions</small>
                 </div>
             </div>
 
             <div class="stat-card info">
                 <div class="stat-icon"><i class="fa-solid fa-calculator"></i></div>
                 <div class="stat-info">
-                    <span class="stat-label">Avg Order Value</span>
-                    <h3 class="stat-value">₹<?= number_format($stats['avg_order_value'], 2) ?></h3>
+                    <span class="stat-label">Avg Order Value (AOV)</span>
+                    <h3 class="stat-value" id="owner-avg-order-value">₹<?= number_format($stats['avg_order_value'], 2) ?></h3>
+                    <small class="stat-subtext">Average spend per table</small>
                 </div>
             </div>
 
@@ -66,65 +96,60 @@ ob_start();
                 <div class="stat-icon"><i class="fa-solid fa-sun"></i></div>
                 <div class="stat-info">
                     <span class="stat-label">Revenue Today</span>
-                    <h3 class="stat-value">₹<?= number_format($stats['revenue_today'], 2) ?></h3>
-                    <small><?= $stats['orders_today'] ?> orders today</small>
+                    <h3 class="stat-value" id="owner-revenue-today">₹<?= number_format($stats['revenue_today'], 2) ?></h3>
+                    <small id="owner-orders-today" class="stat-subtext"><?= $stats['orders_today'] ?> orders today</small>
+                </div>
+            </div>
+
+            <div class="stat-card accent">
+                <div class="stat-icon"><i class="fa-solid fa-chair"></i></div>
+                <div class="stat-info">
+                    <span class="stat-label">Table Occupancy</span>
+                    <h3 class="stat-value" id="owner-table-occupancy"><?= $stats['table_metrics']['occupancy_rate'] ?>%</h3>
+                    <small id="owner-table-occupancy-sub" class="stat-subtext"><?= $stats['table_metrics']['occupied_tables'] ?> of <?= $stats['table_metrics']['total_tables'] ?> tables occupied</small>
                 </div>
             </div>
         </div>
 
-        <div class="analytics-split">
-            <!-- Best Selling Dishes Table / Chart -->
-            <div class="card analytics-card">
-                <h3><i class="fa-solid fa-trophy"></i> Best Selling Dishes</h3>
-                <?php if (!empty($stats['best_selling'])): ?>
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Dish</th>
-                                <th>Category</th>
-                                <th>Price</th>
-                                <th>Items Sold</th>
-                                <th>Revenue</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($stats['best_selling'] as $dish): ?>
-                                <tr>
-                                    <td><strong><?= htmlspecialchars($dish['name']) ?></strong></td>
-                                    <td><span class="badge badge-outline"><?= htmlspecialchars($dish['category']) ?></span></td>
-                                    <td>₹<?= number_format($dish['price'], 2) ?></td>
-                                    <td><span class="badge badge-success"><?= $dish['total_quantity'] ?> sold</span></td>
-                                    <td><strong>₹<?= number_format($dish['total_revenue'], 2) ?></strong></td>
-                                </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                <?php else: ?>
-                    <p class="text-muted">No sales data recorded yet.</p>
-                <?php endif; ?>
-            </div>
+        <!-- Live Recent Orders Stream -->
+        <div style="margin-top: 24px;">
+            <div class="card analytics-card" id="owner-recent-orders-container">
+                <div class="card-header-flex">
+                    <h3><i class="fa-solid fa-clock-rotate-left text-primary"></i> Live Recent Orders</h3>
+                    <span class="badge badge-success"><i class="fa-solid fa-rotate"></i> Auto Refresh</span>
+                </div>
 
-            <!-- Recent Orders List -->
-            <div class="card analytics-card">
-                <h3><i class="fa-solid fa-clock-rotate-left"></i> Recent Orders</h3>
                 <?php if (!empty($stats['recent_orders'])): ?>
                     <div class="recent-orders-list">
                         <?php foreach ($stats['recent_orders'] as $ord): ?>
                             <div class="recent-order-item">
                                 <div class="ro-header">
-                                    <span class="ro-table"><?= htmlspecialchars($ord['table_number']) ?></span>
+                                    <span class="ro-table"><i class="fa-solid fa-chair"></i> <?= htmlspecialchars($ord['table_number']) ?></span>
                                     <span class="badge badge-status-<?= $ord['status'] ?>"><?= strtoupper($ord['status']) ?></span>
                                 </div>
+
+                                <?php if (!empty($ord['items'])): ?>
+                                    <div class="ro-items-summary">
+                                        <?php foreach ($ord['items'] as $item): ?>
+                                            <div class="ro-item-line">
+                                                <span class="ro-item-name">• <?= htmlspecialchars($item['name']) ?></span>
+                                                <span class="ro-item-qty">x<?= $item['quantity'] ?></span>
+                                                <span class="ro-item-price">₹<?= number_format($item['price_at_order'] * $item['quantity'], 2) ?></span>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                <?php endif; ?>
+
                                 <div class="ro-meta">
                                     <span>Order #<?= $ord['id'] ?></span> &bull;
-                                    <span>₹<?= number_format($ord['total_amount'], 2) ?></span> &bull;
+                                    <strong>Total: ₹<?= number_format($ord['total_amount'], 2) ?></strong> &bull;
                                     <small><?= date('M j, g:i a', strtotime($ord['created_at'])) ?></small>
                                 </div>
                             </div>
                         <?php endforeach; ?>
                     </div>
                 <?php else: ?>
-                    <p class="text-muted">No orders found.</p>
+                    <p class="text-muted p-4">No orders found.</p>
                 <?php endif; ?>
             </div>
         </div>
@@ -186,12 +211,19 @@ ob_start();
 
     <!-- TAB 3: Table & QR Code Manager -->
     <div id="tab-tables" class="owner-tab-content">
-        <div class="tab-header-action">
+        <div class="tab-header-action" style="flex-wrap:wrap; gap:12px;">
             <h3><i class="fa-solid fa-qrcode"></i> Tables & QR Code Generator</h3>
-            <form action="/owner/table/create" method="POST" class="form-inline">
-                <input type="text" name="table_number" placeholder="New Table Name (e.g. Table 6)" required class="form-control">
-                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add Table</button>
-            </form>
+            
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <form action="/owner/table/create" method="POST" class="form-inline">
+                    <input type="text" name="table_number" placeholder="Table Name (e.g. Table 6, Table 7)" required class="form-control" style="min-width:230px;">
+                    <button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add Table(s)</button>
+                </form>
+
+                <button id="btn-open-batch-table-modal" class="btn btn-warning">
+                    <i class="fa-solid fa-layer-group"></i> ⚡ Batch Add Multiple Tables
+                </button>
+            </div>
         </div>
 
         <div class="qr-cards-grid">
@@ -235,6 +267,11 @@ ob_start();
     </div>
 </div>
 
+<!-- Pass initial stats to JavaScript -->
+<script>
+    window.INITIAL_STATS = <?= json_encode($stats) ?>;
+</script>
+
 <!-- Add / Edit Dish Modal -->
 <div id="dish-modal" class="modal-overlay hidden">
     <div class="modal-content">
@@ -252,29 +289,44 @@ ob_start();
                 </div>
 
                 <div class="form-group">
-                    <label>Category</label>
+                    <label><i class="fa-solid fa-list"></i> Category</label>
                     <select name="category" id="dish-category" required class="form-control">
+                        <option value="Soups">Soups</option>
+                        <option value="Noodles">Noodles</option>
+                        <option value="Special Dosa">Special Dosa</option>
+                        <option value="Breakfast & Tiffin">Breakfast & Tiffin</option>
+                        <option value="Dosai Varieties">Dosai Varieties</option>
+                        <option value="Gravy & Curries">Gravy & Curries</option>
                         <option value="Starters">Starters</option>
-                        <option value="Mains">Mains</option>
-                        <option value="Desserts">Desserts</option>
-                        <option value="Beverages">Beverages</option>
-                        <option value="Specials">Specials</option>
+                        <option value="Rice & Pulav">Rice & Pulav</option>
+                        <option value="Roti & Breads">Roti & Breads</option>
+                        <option value="Meals & Variety Rice">Meals & Variety Rice</option>
+                        <option value="Biryani">Biryani</option>
+                        <option value="Evening & Day Specials">Evening & Day Specials</option>
                     </select>
                 </div>
 
                 <div class="form-group">
-                    <label>Price (₹)</label>
-                    <input type="number" step="0.01" name="price" id="dish-price" required class="form-control">
+                    <label><i class="fa-solid fa-indian-rupee-sign"></i> Price (₹)</label>
+                    <input type="number" step="0.01" name="price" id="dish-price" placeholder="e.g. 150.00" required class="form-control" style="font-size:1.1rem; font-weight:700;">
                 </div>
 
                 <div class="form-group">
-                    <label>Description</label>
-                    <textarea name="description" id="dish-description" rows="3" class="form-control"></textarea>
+                    <label><i class="fa-solid fa-align-left"></i> Description</label>
+                    <textarea name="description" id="dish-description" rows="3" placeholder="Enter dish description..." class="form-control"></textarea>
                 </div>
 
                 <div class="form-group">
-                    <label>Image URL</label>
-                    <input type="url" name="image_url" id="dish-image-url" placeholder="https://..." class="form-control">
+                    <label><i class="fa-solid fa-image"></i> Dish Picture / Image URL</label>
+                    <input type="url" name="image_url" id="dish-image-url" placeholder="https://images.unsplash.com/..." class="form-control">
+                    <div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap; align-items:center;">
+                        <small class="text-muted" style="width:100%; display:block; font-weight:600;">Sample Food Image Presets:</small>
+                        <button type="button" class="btn btn-sm btn-outline btn-preset-img" data-url="https://images.unsplash.com/photo-1668236543090-82eba5ee5976?auto=format&fit=crop&w=400&q=80">Dosa</button>
+                        <button type="button" class="btn btn-sm btn-outline btn-preset-img" data-url="https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=400&q=80">Idli / Vada</button>
+                        <button type="button" class="btn btn-sm btn-outline btn-preset-img" data-url="https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?auto=format&fit=crop&w=400&q=80">Biryani</button>
+                        <button type="button" class="btn btn-sm btn-outline btn-preset-img" data-url="https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&w=400&q=80">Paneer Curry</button>
+                        <button type="button" class="btn btn-sm btn-outline btn-preset-img" data-url="https://images.unsplash.com/photo-1534778101976-62847782c213?auto=format&fit=crop&w=400&q=80">Filter Coffee</button>
+                    </div>
                 </div>
 
                 <div class="form-group form-checkbox">
@@ -284,7 +336,38 @@ ob_start();
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="submit" class="btn btn-success btn-block">Save Dish</button>
+                <button type="submit" class="btn btn-success btn-block btn-lg">
+                    <i class="fa-solid fa-check"></i> Save Dish Details & Price
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Batch Add Multiple Tables Modal -->
+<div id="batch-table-modal" class="modal-overlay hidden">
+    <div class="modal-content" style="max-width:440px;">
+        <div class="modal-header">
+            <h3><i class="fa-solid fa-layer-group"></i> Batch Add Multiple Tables</h3>
+            <button id="btn-close-batch-table-modal" class="close-btn"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <form action="/owner/table/create" method="POST">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="table-prefix"><i class="fa-solid fa-font"></i> Table Name Prefix</label>
+                    <input type="text" id="table-prefix" name="prefix" value="Table" required class="form-control" placeholder="e.g. Table or VIP Table">
+                </div>
+
+                <div class="form-group">
+                    <label for="table-count"><i class="fa-solid fa-hashtag"></i> Quantity of New Tables to Add</label>
+                    <input type="number" id="table-count" name="count" value="5" min="1" max="50" required class="form-control" style="font-size:1.2rem; font-weight:700;">
+                    <small class="text-muted">Auto-detects current highest table number and generates sequential tables (e.g. Table 6, Table 7, Table 8...)</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn btn-warning btn-block btn-lg">
+                    <i class="fa-solid fa-bolt"></i> Generate Multiple Tables Now
+                </button>
             </div>
         </form>
     </div>

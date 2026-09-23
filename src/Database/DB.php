@@ -37,6 +37,12 @@ class DB
 
                     if ($isNewDb) {
                         self::initSqliteTables(self::$instance);
+                    } else {
+                        try {
+                            self::$instance->exec("ALTER TABLE tables ADD COLUMN bill_requested INTEGER DEFAULT 0");
+                        } catch (PDOException $ex) {
+                            // Column already exists
+                        }
                     }
                 } catch (PDOException $e) {
                     die("SQLite Database Error: " . $e->getMessage());
@@ -65,6 +71,7 @@ class DB
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 table_number TEXT NOT NULL UNIQUE,
                 status TEXT DEFAULT 'available',
+                bill_requested INTEGER DEFAULT 0,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );",
 

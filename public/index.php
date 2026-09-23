@@ -44,9 +44,10 @@ $app->get('/', function (Request $request, Response $response) {
 $app->get('/table/{table_id}', [\App\Controllers\CustomerController::class, 'showMenu']);
 $app->post('/table/{table_id}/order', [\App\Controllers\CustomerController::class, 'placeOrder']);
 
-// Customer OTP Auth API Routes
+// Customer OTP & Bill Intimate API Routes
 $app->post('/api/customer/send-otp', [\App\Controllers\ApiController::class, 'sendOtp']);
 $app->post('/api/customer/verify-otp', [\App\Controllers\ApiController::class, 'verifyOtp']);
+$app->post('/api/table/{table_id}/request-bill', [\App\Controllers\ApiController::class, 'requestBill']);
 
 // Page 2: Kitchen Page
 $app->get('/kitchen', [\App\Controllers\KitchenController::class, 'index']);
@@ -58,13 +59,15 @@ $app->post('/waiter/orders/{id}/serve', [\App\Controllers\WaiterController::clas
 $app->post('/waiter/tables/{id}/close-bill', [\App\Controllers\WaiterController::class, 'closeBill']);
 $app->post('/waiter/tables/{id}/free', [\App\Controllers\WaiterController::class, 'freeTable']);
 
-// Page 4: Owner Page
+// Page 4: Owner & Admin Console Page
 $app->get('/owner', [\App\Controllers\OwnerController::class, 'index']);
+$app->get('/admin', [\App\Controllers\OwnerController::class, 'index']);
 $app->post('/owner/dish/save', [\App\Controllers\OwnerController::class, 'saveDish']);
 $app->post('/owner/dish/{id}/toggle', [\App\Controllers\OwnerController::class, 'toggleDishAvailability']);
 $app->post('/owner/dish/{id}/delete', [\App\Controllers\OwnerController::class, 'deleteDish']);
 $app->post('/owner/table/create', [\App\Controllers\OwnerController::class, 'createTable']);
 $app->post('/owner/table/{id}/delete', [\App\Controllers\OwnerController::class, 'deleteTable']);
+$app->post('/api/owner/unlock-analytics', [\App\Controllers\ApiController::class, 'unlockAnalytics']);
 
 // Auth & Login
 $app->get('/login', function (Request $request, Response $response) {
@@ -81,5 +84,6 @@ $app->get('/api/logout', [\App\Controllers\ApiController::class, 'logout']);
 $app->get('/api/table/{table_id}/status', [\App\Controllers\ApiController::class, 'getCustomerOrderStatus']);
 $app->get('/api/kitchen/orders', [\App\Controllers\ApiController::class, 'getKitchenOrders']);
 $app->get('/api/waiter/status', [\App\Controllers\ApiController::class, 'getWaiterStatus']);
+$app->get('/api/owner/stats', [\App\Controllers\ApiController::class, 'getOwnerStats']);
 
 $app->run();

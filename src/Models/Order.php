@@ -99,18 +99,48 @@ class Order
     public static function getActiveOrderForTable(int $tableId): ?array
     {
         $db = DB::getInstance();
+
+        // Fetch table info
+        $stmtT = $db->prepare("SELECT * FROM tables WHERE id = ?");
+        $stmtT->execute([$tableId]);
+        $tableData = $stmtT->fetch();
+
         // Return latest active order that is not fully completed or billed
         $stmt = $db->prepare("SELECT * FROM orders WHERE table_id = ? AND status IN ('placed', 'accepted', 'ready', 'served') ORDER BY id DESC LIMIT 1");
         $stmt->execute([$tableId]);
         $order = $stmt->fetch();
-        if (!$order) return null;
 
+        if (!$order) {
+            return [
+                'has_active_order' => false,
+                'table_status' => $tableData['status'] ?? 'available',
+                'bill_requested' => (int)($tableData['bill_requested'] ?? 0)
+            ];
+        }
+
+        $order['has_active_order'] = true;
         $order['items'] = self::getItems($order['id']);
-        
-        // Calculate cumulative table total across all active orders in this session
-        $stmtSession = $db->prepare("SELECT COALESCE(SUM(total_amount), 0) as session_total FROM orders WHERE table_id = ? AND status IN ('placed', 'accepted', 'ready', 'served')");
-        $stmtSession->execute([$tableId]);
-        $order['session_total'] = (float)$stmtSession->fetchColumn();
+        $order['bill_requested'] = (int)($tableData['bill_requested'] ?? 0);
+        $order['table_status'] = $tableData['status'] ?? 'occupied';
+
+        // Calculate cumulative table total and fetch session items across all unbilled orders
+        $stmtSessionOrders = $db->prepare("SELECT id, status, total_amount FROM orders WHERE table_id = ? AND status IN ('placed', 'accepted', 'ready', 'served') ORDER BY id ASC");
+        $stmtSessionOrders->execute([$tableId]);
+        $allSessionOrders = $stmtSessionOrders->fetchAll();
+
+        $sessionTotal = 0.0;
+        $allSessionItems = [];
+
+        foreach ($allSessionOrders as $sOrd) {
+            $sessionTotal += (float)$sOrd['total_amount'];
+            $sItems = self::getItems($sOrd['id']);
+            foreach ($sItems as $si) {
+                $allSessionItems[] = $si;
+            }
+        }
+
+        $order['session_total'] = $sessionTotal;
+        $order['session_items'] = $allSessionItems;
 
         return $order;
     }
@@ -197,12 +227,14 @@ class Order
                 $table['session_total'] = $sessionTotal;
                 $table['can_close_bill'] = !$hasUnservedOrders && !$hasReadyOrders && count($sessionOrders) > 0;
                 $table['has_ready_order'] = $hasReadyOrders;
+                $table['bill_requested'] = (int)($table['bill_requested'] ?? 0);
             } else {
                 $table['session_orders'] = [];
                 $table['session_items'] = [];
                 $table['session_total'] = 0.0;
                 $table['can_close_bill'] = false;
                 $table['has_ready_order'] = false;
+                $table['bill_requested'] = 0;
             }
         }
 
@@ -215,12 +247,13 @@ class Order
         $db->beginTransaction();
 
         try {
-            // Set all active orders for table as closed/served
-            $stmt = $db->prepare("UPDATE orders SET status = 'served', updated_at = CURRENT_TIMESTAMP WHERE table_id = ? AND status IN ('placed', 'accepted', 'ready', 'served')");
+            // Set all active unbilled orders for table as paid
+            $stmt = $db->prepare("UPDATE orders SET status = 'paid', updated_at = CURRENT_TIMESTAMP WHERE table_id = ? AND status IN ('placed', 'accepted', 'ready', 'served')");
             $stmt->execute([$tableId]);
 
-            // Free table
-            Table::updateStatus($tableId, 'available');
+            // Clear bill_requested flag and set table status to available
+            $stmtT = $db->prepare("UPDATE tables SET status = 'available', bill_requested = 0 WHERE id = ?");
+            $stmtT->execute([$tableId]);
 
             $db->commit();
             return true;

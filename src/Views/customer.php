@@ -195,6 +195,12 @@ ob_start();
                     <?php endif; ?>
                 </div>
             </details>
+
+            <div class="tracker-actions" style="margin-top:12px; display:flex; gap:10px;">
+                <button id="btn-open-request-bill-modal" class="btn btn-warning btn-block">
+                    <i class="fa-solid fa-receipt"></i> View Session Bill & Request Waiter
+                </button>
+            </div>
         </div>
     </div>
 
@@ -249,7 +255,7 @@ ob_start();
     </div>
 </div>
 
-<!-- Floating Bottom Bar (Matching Reference Bar Actions: View Order | View Cart) -->
+<!-- Floating Bottom Bar -->
 <div id="cart-floating-bar" class="cart-floating-bar hidden">
     <div class="cart-summary-info">
         <span id="cart-item-count" class="cart-badge">0 items</span>
@@ -290,6 +296,63 @@ ob_start();
                 <i class="fa-solid fa-paper-plane"></i> Send Order to Kitchen
             </button>
         </div>
+    </div>
+</div>
+
+<!-- Customer Request Bill Modal Overlay -->
+<div id="customer-bill-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+        <div class="modal-header" style="background:var(--emenu-charcoal); color:#fff;">
+            <h3><i class="fa-solid fa-receipt"></i> Dining Session Bill Summary</h3>
+            <button id="btn-close-customer-bill-modal" class="close-btn"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="modal-body">
+            <div class="cart-table-info" style="margin-bottom:12px; font-weight:700;">
+                <i class="fa-solid fa-chair"></i> Table Session: <?= htmlspecialchars($table['table_number']) ?>
+            </div>
+            <div id="customer-bill-items-list" class="cart-items-container" style="max-height:220px; overflow-y:auto;">
+                <!-- Injected by JS -->
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-top:16px; font-weight:800; font-size:1.2rem; color:var(--primary-gold); padding:10px 0; border-top:2px dashed #cbd5e1;">
+                <span>Total Payable:</span>
+                <span id="customer-bill-total-price">₹0.00</span>
+            </div>
+            <div id="bill-request-status-badge" class="alert alert-info hidden" style="text-align:center; font-weight:700; margin-top:10px;">
+                <i class="fa-solid fa-bell pulse-icon"></i> Waiter Intimated! Waiter will bring bill / payment terminal to your table.
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button id="btn-submit-bill-request" class="btn btn-warning btn-block btn-lg">
+                <i class="fa-solid fa-bell"></i> Intimate Waiter for Bill & Payment
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Customer Thank You Farewell Greeting Overlay -->
+<div id="customer-thankyou-modal" class="modal-overlay hidden">
+    <div class="modal-content" style="text-align:center; padding:30px 20px; max-width:440px;">
+        <div class="thankyou-icon" style="font-size:4.5rem; color:#10b981; margin-bottom:14px; animation: bounce 1.5s infinite;">
+            <i class="fa-solid fa-circle-check"></i>
+        </div>
+        <h2 style="font-family:'Outfit',sans-serif; color:var(--emenu-charcoal); margin-bottom:8px; font-weight:800;">
+            Thank You for Dining with Us!
+        </h2>
+        <h4 style="color:var(--emenu-gold); margin-bottom:16px; font-weight:700;">
+            Visit Chennai Vasantha Bhavan Again! 🙏
+        </h4>
+        <p style="color:var(--text-muted); font-size:0.9rem; margin-bottom:20px;">
+            Your payment was successfully collected by waiter. We hope you enjoyed our authentic vegetarian delicacies!
+        </p>
+
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:16px; margin-bottom:20px;">
+            <span style="font-size:0.85rem; color:var(--text-muted); display:block;">Paid Total Amount</span>
+            <h3 id="thankyou-paid-total" style="font-size:1.6rem; color:#1e293b; margin:4px 0 0 0;">₹0.00</h3>
+        </div>
+
+        <button id="btn-restart-dining-session" class="btn btn-primary btn-block btn-lg">
+            <i class="fa-solid fa-rotate"></i> Start New Order / Table Session
+        </button>
     </div>
 </div>
 
