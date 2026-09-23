@@ -9,6 +9,7 @@ $customerSession = AuthService::getCustomerSession();
 $isLoggedIn = $customerSession !== null;
 $customerMobile = $customerSession['mobile'] ?? '';
 
+$hasActiveOrder = !empty($activeOrder['has_active_order']);
 $allTables = Table::all();
 
 $headerRightHtml = '
@@ -125,31 +126,31 @@ ob_start();
     </div>
 
     <!-- Active Order Tracker Section (Real-time live status updates) -->
-    <div id="order-tracker-container" class="order-tracker-container <?= $activeOrder ? '' : 'hidden' ?>">
+    <div id="order-tracker-container" class="order-tracker-container <?= $hasActiveOrder ? '' : 'hidden' ?>">
         <div class="card order-tracker-card">
             <div class="tracker-header">
                 <div class="tracker-title">
                     <i class="fa-solid fa-clock-rotate-left pulse-icon"></i>
                     <span>Live Order Tracker</span>
                 </div>
-                <span id="tracker-order-id" class="order-number">Order #<?= $activeOrder ? $activeOrder['id'] : '' ?></span>
+                <span id="tracker-order-id" class="order-number">Order #<?= $hasActiveOrder ? $activeOrder['id'] : '' ?></span>
             </div>
 
             <!-- 4-Step Progress Bar -->
             <div class="stepper-wrapper">
-                <div id="step-placed" class="stepper-item <?= $activeOrder && in_array($activeOrder['status'], ['placed', 'accepted', 'ready', 'served']) ? 'completed active' : '' ?>">
+                <div id="step-placed" class="stepper-item <?= $hasActiveOrder && in_array($activeOrder['status'], ['placed', 'accepted', 'ready', 'served']) ? 'completed active' : '' ?>">
                     <div class="step-counter"><i class="fa-solid fa-paper-plane"></i></div>
                     <div class="step-name">Placed</div>
                 </div>
-                <div id="step-accepted" class="stepper-item <?= $activeOrder && in_array($activeOrder['status'], ['accepted', 'ready', 'served']) ? (in_array($activeOrder['status'], ['accepted', 'ready', 'served']) ? 'completed active' : '') : '' ?>">
+                <div id="step-accepted" class="stepper-item <?= $hasActiveOrder && in_array($activeOrder['status'], ['accepted', 'ready', 'served']) ? 'completed active' : '' ?>">
                     <div class="step-counter"><i class="fa-solid fa-fire-burner"></i></div>
                     <div class="step-name">Preparing</div>
                 </div>
-                <div id="step-ready" class="stepper-item <?= $activeOrder && in_array($activeOrder['status'], ['ready', 'served']) ? 'completed active' : '' ?>">
+                <div id="step-ready" class="stepper-item <?= $hasActiveOrder && in_array($activeOrder['status'], ['ready', 'served']) ? 'completed active' : '' ?>">
                     <div class="step-counter"><i class="fa-solid fa-bell"></i></div>
                     <div class="step-name">Ready</div>
                 </div>
-                <div id="step-served" class="stepper-item <?= $activeOrder && $activeOrder['status'] === 'served' ? 'completed active' : '' ?>">
+                <div id="step-served" class="stepper-item <?= $hasActiveOrder && $activeOrder['status'] === 'served' ? 'completed active' : '' ?>">
                     <div class="step-counter"><i class="fa-solid fa-utensils"></i></div>
                     <div class="step-name">Served</div>
                 </div>
@@ -157,7 +158,7 @@ ob_start();
 
             <div id="tracker-status-message" class="status-message">
                 <?php
-                if ($activeOrder) {
+                if ($hasActiveOrder) {
                     switch ($activeOrder['status']) {
                         case 'placed':
                             echo '<i class="fa-solid fa-spinner fa-spin"></i> Order received! Waiting for kitchen to accept...';
@@ -180,7 +181,7 @@ ob_start();
             <details class="order-details-accordion">
                 <summary>View Active Order Items & Running Bill Summary</summary>
                 <div id="tracker-items-list" class="tracker-items-list">
-                    <?php if ($activeOrder && !empty($activeOrder['items'])): ?>
+                    <?php if ($hasActiveOrder && !empty($activeOrder['items'])): ?>
                         <?php foreach ($activeOrder['items'] as $it): ?>
                             <div class="tracker-item-row">
                                 <span class="qty-badge"><?= $it['quantity'] ?>x</span>
@@ -371,7 +372,7 @@ ob_start();
 
 <script>
     window.TABLE_ID = <?= (int)$table['id'] ?>;
-    window.CURRENT_ORDER_ID = <?= $activeOrder ? (int)$activeOrder['id'] : 'null' ?>;
+    window.CURRENT_ORDER_ID = <?= $hasActiveOrder ? (int)$activeOrder['id'] : 'null' ?>;
 </script>
 
 <?php
