@@ -95,17 +95,22 @@ class ApiController
     {
         $tables = Order::getWaiterOverview();
         $readyOrdersCount = 0;
+        $billRequestCount = 0;
 
         foreach ($tables as $t) {
-            if (isset($t['active_order']) && $t['active_order']['status'] === 'ready') {
+            if (!empty($t['has_ready_order'])) {
                 $readyOrdersCount++;
+            }
+            if (!empty($t['bill_requested'])) {
+                $billRequestCount++;
             }
         }
 
         $data = [
             'success' => true,
             'tables' => $tables,
-            'ready_alerts' => $readyOrdersCount
+            'ready_alerts' => $readyOrdersCount,
+            'bill_requests' => $billRequestCount
         ];
 
         $response->getBody()->write(json_encode($data));

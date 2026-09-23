@@ -3,7 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= htmlspecialchars($title ?? 'Agam - QR Menu') ?></title>
+    <meta name="description" content="Agam eMenu — Smart Digital QR Ordering Platform for restaurants. Contactless menu, real-time kitchen display, waiter dashboard & owner analytics.">
+    <meta name="theme-color" content="#0f172a">
+    <title><?= htmlspecialchars($title ?? 'Agam eMenu — Digital QR Ordering') ?></title>
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍽️</text></svg>" type="image/svg+xml">
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

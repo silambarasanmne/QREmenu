@@ -33,10 +33,16 @@ class DB
                     self::$instance->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
                     self::$instance->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
 
-                    // Always ensure tables and seed data exist (handles cold starts, partial inits, and ephemeral /tmp)
+                    // SQLite performance & reliability PRAGMAs
+                    self::$instance->exec("PRAGMA journal_mode=WAL");
+                    self::$instance->exec("PRAGMA foreign_keys=ON");
+                    self::$instance->exec("PRAGMA busy_timeout=5000");
+
+                    // Always ensure tables and seed data exist (handles cold starts, partial inits, ephemeral /tmp)
                     self::initSqliteTables(self::$instance);
                 } catch (PDOException $e) {
-                    die("SQLite Database Error: " . $e->getMessage());
+                    error_log("SQLite Database Error: " . $e->getMessage());
+                    throw new \RuntimeException("Database connection failed. Please try again.");
                 }
             } else {
                 $mc = $config['mysql'];
@@ -47,7 +53,8 @@ class DB
                         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                     ]);
                 } catch (PDOException $e) {
-                    die("MySQL Database Error: " . $e->getMessage());
+                    error_log("MySQL Database Error: " . $e->getMessage());
+                    throw new \RuntimeException("Database connection failed. Please try again.");
                 }
             }
         }

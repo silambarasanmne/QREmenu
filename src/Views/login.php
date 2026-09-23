@@ -13,9 +13,10 @@ ob_start();
     <div class="card login-card">
         <div class="login-header">
             <div class="login-brand-icon">
-                <i class="fa-solid fa-lock"></i>
+                <i class="fa-solid fa-utensils"></i>
             </div>
-            <h2>Agam <?= htmlspecialchars($roleName) ?></h2>
+            <h2>Agam<span style="color:var(--emenu-gold);font-weight:400;">eMenu</span></h2>
+            <h3 style="font-size:1rem;font-weight:500;color:#94a3b8;margin-top:4px;"><?= htmlspecialchars($roleName) ?> Access</h3>
             <p>Please enter your access code to proceed</p>
         </div>
 

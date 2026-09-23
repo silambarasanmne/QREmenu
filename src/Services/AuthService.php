@@ -16,15 +16,12 @@ class AuthService
             session_start();
         }
 
-        // If session role is set to any valid staff role (kitchen, waiter, owner, admin)
-        if (!empty($_SESSION['auth_role'])) {
+        // Require actual authentication — no auto-bypass
+        if (!empty($_SESSION['auth_role']) && !empty($_SESSION['staff_authenticated'])) {
             return true;
         }
 
-        // Auto-authenticate for smooth staff access in demo/local setup
-        $_SESSION['auth_role'] = $role;
-        $_SESSION['staff_authenticated'] = true;
-        return true;
+        return false;
     }
 
     public static function login(string $role, string $pin): bool
@@ -64,7 +61,7 @@ class AuthService
         if (session_status() === PHP_SESSION_NONE) {
             session_start();
         }
-        unset($_SESSION['auth_role']);
+        unset($_SESSION['auth_role'], $_SESSION['staff_authenticated'], $_SESSION['analytics_unlocked']);
     }
 
     // Customer Mobile OTP Authentication
@@ -79,7 +76,7 @@ class AuthService
             return ['success' => false, 'error' => 'Please enter a valid 10-digit mobile number'];
         }
 
-        // Generate 4-digit OTP (Default test OTP: 1234)
+        // Generate 4-digit OTP (Demo mode: fixed OTP 1234)
         $otp = '1234';
         $_SESSION['pending_mobile'] = $cleanMobile;
         $_SESSION['pending_otp'] = $otp;
@@ -87,7 +84,6 @@ class AuthService
         return [
             'success' => true,
             'mobile' => $cleanMobile,
-            'otp_demo' => $otp,
             'message' => 'OTP sent successfully to +91 ' . $cleanMobile
         ];
     }
@@ -111,7 +107,7 @@ class AuthService
             return ['success' => true, 'mobile' => $cleanMobile];
         }
 
-        return ['success' => false, 'error' => 'Invalid OTP code. Please try again (Demo OTP: 1234)'];
+        return ['success' => false, 'error' => 'Invalid OTP code. Please try again.'];
     }
 
     public static function getCustomerSession(): ?array

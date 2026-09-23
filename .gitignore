@@ -1,8 +1,13 @@
 /vendor/
 /db/*.sqlite
-/db/*.sqlite-journal
+*.sqlite
+*.sqlite-journal
 /public/qr_codes/*
 /qr_codes/*
 !.gitkeep
 .env
 .DS_Store
+cookies.txt
+scratch/
+*.phar
+
