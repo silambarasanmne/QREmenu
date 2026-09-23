@@ -1096,26 +1096,8 @@ document.addEventListener('DOMContentLoaded', () => {
             window.print();
         };
 
-
-
-        // Batch Add Tables Modal
-        const batchTableModal = document.getElementById('batch-table-modal');
-        const openBatchTableModalBtn = document.getElementById('btn-open-batch-table-modal');
-        const closeBatchTableModalBtn = document.getElementById('btn-close-batch-table-modal');
-
-        if (openBatchTableModalBtn) {
-            openBatchTableModalBtn.addEventListener('click', () => {
-                if (batchTableModal) batchTableModal.classList.remove('hidden');
-            });
-        }
-
-        if (closeBatchTableModalBtn) {
-            closeBatchTableModalBtn.addEventListener('click', () => {
-                if (batchTableModal) batchTableModal.classList.add('hidden');
-            });
-        }
-
         document.querySelectorAll('.toggle-availability').forEach(chk => {
+
             chk.addEventListener('change', async (e) => {
                 const id = e.target.getAttribute('data-id');
                 try {
