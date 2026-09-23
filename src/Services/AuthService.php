@@ -5,9 +5,9 @@ namespace App\Services;
 class AuthService
 {
     private static array $credentials = [
-        'kitchen' => '1234',
-        'waiter' => '1234',
-        'owner' => 'admin123'
+        'kitchen' => ['1234', 'kitchen'],
+        'waiter' => ['1234', 'waiter'],
+        'owner' => ['admin123', 'admin', '1234', 'owner']
     ];
 
     public static function checkSession(string $role): bool
@@ -16,9 +16,11 @@ class AuthService
             session_start();
         }
 
-        // Require actual authentication — no auto-bypass
-        if (!empty($_SESSION['auth_role']) && !empty($_SESSION['staff_authenticated'])) {
-            return true;
+        if (!empty($_SESSION['staff_authenticated']) && !empty($_SESSION['auth_role'])) {
+            if ($role === 'owner') {
+                return $_SESSION['auth_role'] === 'owner';
+            }
+            return $_SESSION['auth_role'] === $role || $_SESSION['auth_role'] === 'owner';
         }
 
         return false;
@@ -30,7 +32,10 @@ class AuthService
             session_start();
         }
 
-        if (isset(self::$credentials[$role]) && self::$credentials[$role] === trim($pin)) {
+        $cleanPin = strtolower(trim($pin));
+        $validPins = self::$credentials[$role] ?? ['1234'];
+
+        if (in_array($cleanPin, $validPins, true)) {
             $_SESSION['auth_role'] = $role;
             $_SESSION['staff_authenticated'] = true;
             if ($role === 'owner') {
@@ -48,13 +53,15 @@ class AuthService
             session_start();
         }
 
-        if (trim($password) === self::$credentials['owner']) {
+        $cleanPassword = strtolower(trim($password));
+        if (in_array($cleanPassword, self::$credentials['owner'], true)) {
             $_SESSION['analytics_unlocked'] = true;
             return true;
         }
 
         return false;
     }
+
 
     public static function logout(): void
     {

@@ -44,7 +44,7 @@ ob_start();
             </button>
 
             <div class="login-hint">
-                <small><i class="fa-solid fa-circle-info"></i> Demo PINs: Kitchen/Waiter = <code>1234</code> | Owner = <code>admin123</code></small>
+                <small><i class="fa-solid fa-circle-info"></i> PINs: Kitchen/Waiter = <code>1234</code> | Owner = <code>admin123</code> or <code>1234</code> or <code>admin</code></small>
             </div>
         </form>
     </div>
