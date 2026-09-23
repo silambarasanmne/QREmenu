@@ -159,13 +159,13 @@ class RevenueService
             ];
         }
 
-        // 8. Recent Orders Stream (Top 10) with Dish Items
+        // 8. Recent Orders Stream (Top 25) with Dish Items
         $stmtRecent = $db->query("
             SELECT o.*, t.table_number 
             FROM orders o 
             JOIN tables t ON o.table_id = t.id 
             ORDER BY o.id DESC 
-            LIMIT 10
+            LIMIT 25
         ");
         $recentOrders = $stmtRecent->fetchAll();
 
@@ -190,6 +190,17 @@ class RevenueService
         ");
         $tableMetrics = $stmtTableStats->fetch();
 
+        // 10. Formatted Period Label
+        if ($startDate && $endDate) {
+            if ($startDate === $endDate) {
+                $periodLabel = date('d-m-Y', strtotime($startDate));
+            } else {
+                $periodLabel = date('d-m-Y', strtotime($startDate)) . ' to ' . date('d-m-Y', strtotime($endDate));
+            }
+        } else {
+            $periodLabel = date('F Y'); // e.g. "September 2026"
+        }
+
         return [
             'total_revenue' => (float)($rangeStats['total_revenue'] ?? 0),
             'total_orders' => (int)($rangeStats['total_orders'] ?? 0),
@@ -209,6 +220,7 @@ class RevenueService
                 'bills_requested' => (int)($tableMetrics['bills_requested'] ?? 0),
                 'occupancy_rate' => ($tableMetrics['total_tables'] > 0) ? round(($tableMetrics['occupied_tables'] / $tableMetrics['total_tables']) * 100) : 0
             ],
+            'period_label' => $periodLabel,
             'start_date' => $startDate,
             'end_date' => $endDate
         ];

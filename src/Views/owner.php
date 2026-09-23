@@ -29,36 +29,35 @@ ob_start();
         <div class="analytics-header-card card">
             <div class="analytics-header-left">
                 <h2><i class="fa-solid fa-chart-line text-primary"></i> Revenue & Business Analytics</h2>
-                <p class="text-muted">Real-time financial performance, category shares, and peak dining insights.</p>
+                <p class="text-muted">Real-time financial performance and live order activity.</p>
             </div>
             
             <div class="analytics-header-right">
-                <button type="button" class="btn btn-outline btn-sm" onclick="window.print()">
-                    <i class="fa-solid fa-print"></i> Print Report
-                </button>
-                <button type="button" id="btn-export-csv" class="btn btn-success btn-sm">
-                    <i class="fa-solid fa-file-csv"></i> Export CSV
+                <button type="button" class="btn btn-primary btn-sm" id="btn-print-report" onclick="window.printReport()">
+                    <i class="fa-solid fa-file-pdf"></i> Print / Download PDF
                 </button>
             </div>
         </div>
 
-        <!-- Date Range Presets & Filter Bar -->
-        <div class="card filter-card">
-            <form method="GET" action="/owner" class="date-filter-form" id="owner-date-filter-form">
-                <div class="filter-presets-group">
-                    <span class="filter-label"><i class="fa-solid fa-calendar-days"></i> Quick Presets:</span>
-                    <a href="/owner" class="preset-btn <?= (empty($stats['start_date']) && empty($stats['end_date'])) ? 'active' : '' ?>">All Time</a>
-                    <a href="/owner?start_date=<?= date('Y-m-d') ?>&end_date=<?= date('Y-m-d') ?>" class="preset-btn <?= ($stats['start_date'] === date('Y-m-d') && $stats['end_date'] === date('Y-m-d')) ? 'active' : '' ?>">Today</a>
-                    <a href="/owner?start_date=<?= date('Y-m-d', strtotime('-7 days')) ?>&end_date=<?= date('Y-m-d') ?>" class="preset-btn">Last 7 Days</a>
-                    <a href="/owner?start_date=<?= date('Y-m-01') ?>&end_date=<?= date('Y-m-t') ?>" class="preset-btn">This Month</a>
-                </div>
+        <!-- Date Range Presets & Compact Filter Bar -->
+        <div class="card filter-card compact-filter-card">
+            <form method="GET" action="/owner" class="date-filter-form compact-form" id="owner-date-filter-form">
+                <div class="filter-row-compact">
+                    <div class="filter-presets-group">
+                        <span class="filter-label"><i class="fa-solid fa-calendar-days"></i> Quick Presets:</span>
+                        <a href="/owner" class="preset-btn <?= (empty($stats['start_date']) && empty($stats['end_date'])) ? 'active' : '' ?>">All Time</a>
+                        <a href="/owner?start_date=<?= date('Y-m-d') ?>&end_date=<?= date('Y-m-d') ?>" class="preset-btn <?= ($stats['start_date'] === date('Y-m-d') && $stats['end_date'] === date('Y-m-d')) ? 'active' : '' ?>">Today</a>
+                        <a href="/owner?start_date=<?= date('Y-m-d', strtotime('-7 days')) ?>&end_date=<?= date('Y-m-d') ?>" class="preset-btn">Last 7 Days</a>
+                        <a href="/owner?start_date=<?= date('Y-m-01') ?>&end_date=<?= date('Y-m-t') ?>" class="preset-btn">This Month</a>
+                    </div>
 
-                <div class="form-group-inline date-custom-range">
-                    <label>Custom:</label>
-                    <input type="date" name="start_date" value="<?= htmlspecialchars($stats['start_date'] ?? '') ?>" class="form-control form-control-sm">
-                    <span>to</span>
-                    <input type="date" name="end_date" value="<?= htmlspecialchars($stats['end_date'] ?? '') ?>" class="form-control form-control-sm">
-                    <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-filter"></i> Filter</button>
+                    <div class="filter-custom-group">
+                        <span class="filter-label">Custom:</span>
+                        <input type="date" name="start_date" value="<?= htmlspecialchars($stats['start_date'] ?? '') ?>" class="form-control form-control-sm date-input-sm">
+                        <span>to</span>
+                        <input type="date" name="end_date" value="<?= htmlspecialchars($stats['end_date'] ?? '') ?>" class="form-control form-control-sm date-input-sm">
+                        <button type="submit" class="btn btn-primary btn-sm btn-filter-sm"><i class="fa-solid fa-filter"></i> Filter</button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -111,7 +110,7 @@ ob_start();
             </div>
         </div>
 
-        <!-- Live Recent Orders Stream -->
+        <!-- Live Recent Orders Stream with Mini Scrollbar -->
         <div style="margin-top: 24px;">
             <div class="card analytics-card" id="owner-recent-orders-container">
                 <div class="card-header-flex">
@@ -120,38 +119,136 @@ ob_start();
                 </div>
 
                 <?php if (!empty($stats['recent_orders'])): ?>
-                    <div class="recent-orders-list">
-                        <?php foreach ($stats['recent_orders'] as $ord): ?>
-                            <div class="recent-order-item">
-                                <div class="ro-header">
-                                    <span class="ro-table"><i class="fa-solid fa-chair"></i> <?= htmlspecialchars($ord['table_number']) ?></span>
-                                    <span class="badge badge-status-<?= $ord['status'] ?>"><?= strtoupper($ord['status']) ?></span>
-                                </div>
-
-                                <?php if (!empty($ord['items'])): ?>
-                                    <div class="ro-items-summary">
-                                        <?php foreach ($ord['items'] as $item): ?>
-                                            <div class="ro-item-line">
-                                                <span class="ro-item-name">• <?= htmlspecialchars($item['name']) ?></span>
-                                                <span class="ro-item-qty">x<?= $item['quantity'] ?></span>
-                                                <span class="ro-item-price">₹<?= number_format($item['price_at_order'] * $item['quantity'], 2) ?></span>
-                                            </div>
-                                        <?php endforeach; ?>
+                    <div class="recent-orders-scroll-container" id="recent-orders-scroll-box">
+                        <div class="recent-orders-list">
+                            <?php foreach ($stats['recent_orders'] as $ord): ?>
+                                <div class="recent-order-item">
+                                    <div class="ro-header">
+                                        <span class="ro-table"><i class="fa-solid fa-chair"></i> <?= htmlspecialchars($ord['table_number']) ?></span>
+                                        <span class="badge badge-status-<?= $ord['status'] ?>"><?= strtoupper($ord['status']) ?></span>
                                     </div>
-                                <?php endif; ?>
 
-                                <div class="ro-meta">
-                                    <span>Order #<?= $ord['id'] ?></span> &bull;
-                                    <strong>Total: ₹<?= number_format($ord['total_amount'], 2) ?></strong> &bull;
-                                    <small><?= date('M j, g:i a', strtotime($ord['created_at'])) ?></small>
+                                    <?php if (!empty($ord['items'])): ?>
+                                        <div class="ro-items-summary">
+                                            <?php foreach ($ord['items'] as $item): ?>
+                                                <div class="ro-item-line">
+                                                    <span class="ro-item-name">• <?= htmlspecialchars($item['name']) ?></span>
+                                                    <span class="ro-item-qty">x<?= $item['quantity'] ?></span>
+                                                    <span class="ro-item-price">₹<?= number_format($item['price_at_order'] * $item['quantity'], 2) ?></span>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    <?php endif; ?>
+
+                                    <div class="ro-meta">
+                                        <span>Order #<?= $ord['id'] ?></span> &bull;
+                                        <strong>Total: ₹<?= number_format($ord['total_amount'], 2) ?></strong> &bull;
+                                        <small><?= date('M j, g:i a', strtotime($ord['created_at'])) ?></small>
+                                    </div>
                                 </div>
-                            </div>
-                        <?php endforeach; ?>
+                            <?php endforeach; ?>
+                        </div>
                     </div>
                 <?php else: ?>
                     <p class="text-muted p-4">No orders found.</p>
                 <?php endif; ?>
             </div>
+        </div>
+    </div>
+
+    <!-- Hidden Printable Report Template for PDF / Print -->
+    <div id="printable-report-template" class="print-only-container">
+        <div class="print-report-header">
+            <div class="print-logo-row">
+                <div class="print-brand">
+                    <div class="print-logo-icon"><i class="fa-solid fa-utensils"></i></div>
+                    <div class="print-brand-title">Agam <span>eMenu</span></div>
+                </div>
+                <div class="print-company-details">
+                    <h3>Hotel Agam Restaurant</h3>
+                    <p>Fine Dining & QR Digital Ordering System</p>
+                    <p>Contact: +91 9876543210 | info@agamrestaurant.com</p>
+                </div>
+            </div>
+            <hr class="print-hr">
+            <div class="print-report-meta">
+                <h2>REVENUE & CATEGORY SALES FINANCIAL REPORT</h2>
+                <div class="print-meta-grid">
+                    <div><strong>Report Period:</strong> <?= htmlspecialchars($stats['period_label']) ?></div>
+                    <div><strong>Generated At:</strong> <?= date('F j, Y - g:i A') ?></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Print Summary Overview Cards -->
+        <div class="print-summary-box">
+            <div class="print-stat-item">
+                <span class="lbl">Total Revenue</span>
+                <span class="val">₹<?= number_format($stats['total_revenue'], 2) ?></span>
+            </div>
+            <div class="print-stat-item">
+                <span class="lbl">Total Paid Orders</span>
+                <span class="val"><?= $stats['total_orders'] ?></span>
+            </div>
+            <div class="print-stat-item">
+                <span class="lbl">Avg Order Value (AOV)</span>
+                <span class="val">₹<?= number_format($stats['avg_order_value'], 2) ?></span>
+            </div>
+            <div class="print-stat-item">
+                <span class="lbl">Revenue Today</span>
+                <span class="val">₹<?= number_format($stats['revenue_today'], 2) ?></span>
+            </div>
+        </div>
+
+        <!-- Category-Wise Amount & Total Breakdown Table -->
+        <div class="print-section">
+            <h3>Category-Wise Revenue & Sales Breakdown</h3>
+            <table class="print-table">
+                <thead>
+                    <tr>
+                        <th style="width: 5%;">#</th>
+                        <th style="width: 45%;">Menu Category</th>
+                        <th style="width: 20%; text-align: center;">Total Items Sold</th>
+                        <th style="width: 15%; text-align: right;">Revenue Share (%)</th>
+                        <th style="width: 15%; text-align: right;">Total Amount (₹)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php 
+                    $grandItems = 0;
+                    $grandTotal = 0;
+                    if (!empty($stats['category_breakdown'])):
+                        foreach ($stats['category_breakdown'] as $idx => $cat): 
+                            $grandItems += $cat['items_sold'];
+                            $grandTotal += $cat['category_revenue'];
+                    ?>
+                        <tr>
+                            <td><?= $idx + 1 ?></td>
+                            <td><strong><?= htmlspecialchars($cat['category']) ?></strong></td>
+                            <td style="text-align: center;"><?= number_format($cat['items_sold']) ?></td>
+                            <td style="text-align: right;"><?= number_format($cat['percentage'], 1) ?>%</td>
+                            <td style="text-align: right; font-weight: 700;">₹<?= number_format($cat['category_revenue'], 2) ?></td>
+                        </tr>
+                    <?php 
+                        endforeach; 
+                    else:
+                    ?>
+                        <tr><td colspan="5" style="text-align:center;">No category records found for this period.</td></tr>
+                    <?php endif; ?>
+                </tbody>
+                <tfoot>
+                    <tr class="print-total-row">
+                        <td colspan="2">GRAND TOTAL AMOUNT</td>
+                        <td style="text-align: center; font-weight: 800;"><?= number_format($grandItems) ?> items</td>
+                        <td style="text-align: right; font-weight: 800;">100.0%</td>
+                        <td style="text-align: right; font-weight: 900; font-size: 1.1rem;">₹<?= number_format($grandTotal, 2) ?></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+
+        <div class="print-footer">
+            <p>Report generated automatically by Agam eMenu Restaurant Management System &bull; Page 1 of 1</p>
         </div>
     </div>
 

@@ -1016,6 +1016,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (elOccSub) elOccSub.textContent = `${s.table_metrics.occupied_tables} of ${s.table_metrics.total_tables} tables occupied`;
                 }
 
+                // Save current scroll position before updating
+                const scrollBox = document.getElementById('recent-orders-scroll-box');
+                const savedScrollTop = scrollBox ? scrollBox.scrollTop : 0;
+
                 // Update Recent Orders container with Live Auto Refresh & Item Breakdown
                 const recentContainer = document.getElementById('owner-recent-orders-container');
                 if (recentContainer && s.recent_orders) {
@@ -1032,7 +1036,8 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <h3><i class="fa-solid fa-clock-rotate-left text-primary"></i> Live Recent Orders</h3>
                                 <span class="badge badge-success"><i class="fa-solid fa-rotate"></i> Auto Refresh</span>
                             </div>
-                            <div class="recent-orders-list">`;
+                            <div class="recent-orders-scroll-container" id="recent-orders-scroll-box">
+                                <div class="recent-orders-list">`;
 
                         s.recent_orders.forEach(ord => {
                             const dateObj = new Date(ord.created_at);
@@ -1068,8 +1073,14 @@ document.addEventListener('DOMContentLoaded', () => {
                                 </div>`;
                         });
 
-                        html += `</div>`;
+                        html += `</div></div>`;
                         recentContainer.innerHTML = html;
+
+                        // Restore scroll position after HTML replacement
+                        const newScrollBox = document.getElementById('recent-orders-scroll-box');
+                        if (newScrollBox && savedScrollTop > 0) {
+                            newScrollBox.scrollTop = savedScrollTop;
+                        }
                     }
                 }
             } catch (e) {
@@ -1080,40 +1091,10 @@ document.addEventListener('DOMContentLoaded', () => {
         pollOwnerStats();
         setInterval(pollOwnerStats, 5000);
 
-        // CSV Export functionality
-        const btnExportCsv = document.getElementById('btn-export-csv');
-        if (btnExportCsv) {
-            btnExportCsv.addEventListener('click', () => {
-                if (!window.INITIAL_STATS) return;
-                const s = window.INITIAL_STATS;
-                
-                let csvContent = "data:text/csv;charset=utf-8,";
-                csvContent += "REPORT: RESTAURANT REVENUE & SALES SUMMARY\n";
-                csvContent += `Generated At,${new Date().toLocaleString()}\n\n`;
-                
-                csvContent += "METRICS SUMMARY\n";
-                csvContent += `Total Revenue,₹${s.total_revenue}\n`;
-                csvContent += `Total Served Orders,${s.total_orders}\n`;
-                csvContent += `Average Order Value,₹${s.avg_order_value}\n`;
-                csvContent += `Revenue Today,₹${s.revenue_today}\n\n`;
-
-                csvContent += "CATEGORY SALES BREAKDOWN\n";
-                csvContent += "Category,Items Sold,Revenue (₹),Share (%)\n";
-                if (s.category_breakdown) {
-                    s.category_breakdown.forEach(c => {
-                        csvContent += `"${c.category}",${c.items_sold},${c.category_revenue},${c.percentage}%\n`;
-                    });
-                }
-
-                const encodedUri = encodeURI(csvContent);
-                const link = document.createElement("a");
-                link.setAttribute("href", encodedUri);
-                link.setAttribute("download", `revenue_report_${new Date().toISOString().slice(0,10)}.csv`);
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            });
-        }
+        // Window Print / Download PDF Report Handler
+        window.printReport = function() {
+            window.print();
+        };
 
 
 

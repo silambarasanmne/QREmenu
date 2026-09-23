@@ -64,6 +64,7 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 8px;
 }
 
 .brand-logo {
@@ -76,6 +77,7 @@ body {
     font-size: 1.25rem;
     color: #1e293b;
     letter-spacing: -0.5px;
+    flex-shrink: 0;
 }
 
 .brand-logo .logo-icon {
@@ -100,6 +102,8 @@ body {
     display: flex;
     align-items: center;
     gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
 }
 
 .mobile-session-badge {
@@ -110,6 +114,10 @@ body {
     font-weight: 800;
     font-size: 0.8rem;
     box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
 }
 
 .table-badge {
@@ -119,10 +127,59 @@ body {
     border-radius: 25px;
     font-weight: 700;
     font-size: 0.85rem;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 6px;
     box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    white-space: nowrap;
+}
+
+/* Mobile Responsiveness for Header Badges */
+@media (max-width: 576px) {
+    .app-header {
+        padding: 8px 10px;
+    }
+
+    .brand-logo {
+        font-size: 1.05rem;
+        gap: 6px;
+    }
+
+    .brand-logo .logo-icon {
+        width: 30px;
+        height: 30px;
+        font-size: 0.9rem;
+    }
+
+    .header-right-badges {
+        gap: 4px;
+    }
+
+    .mobile-session-badge {
+        padding: 3px 8px;
+        font-size: 0.72rem;
+    }
+
+    .table-badge {
+        padding: 3px 10px;
+        font-size: 0.75rem;
+    }
+}
+
+@media (max-width: 380px) {
+    .brand-logo .brand-name {
+        font-size: 0.95rem;
+    }
+    
+    .mobile-session-badge {
+        font-size: 0.68rem;
+        padding: 2px 6px;
+    }
+
+    .table-badge {
+        font-size: 0.7rem;
+        padding: 3px 8px;
+    }
 }
 
 /* Customer OTP Verification Card */
@@ -1858,5 +1915,269 @@ input:checked + .slider:before { transform: translateX(20px); }
 .ro-item-price {
     font-weight: 700;
     color: #0f172a;
+}
+
+/* ==========================================================================
+   COMPACT FILTER BAR & MINI SCROLLBAR STYLES
+   ========================================================================== */
+.compact-filter-card {
+    padding: 10px 16px;
+    margin-bottom: 16px;
+}
+
+.filter-row-compact {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.filter-custom-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+}
+
+.date-input-sm {
+    padding: 4px 8px;
+    font-size: 0.8rem;
+    height: 32px;
+    border-radius: 6px;
+    border: 1px solid #cbd5e1;
+}
+
+.btn-filter-sm {
+    padding: 4px 12px;
+    font-size: 0.8rem;
+    height: 32px;
+}
+
+/* Mini Scrollbar for Live Recent Orders Stream */
+.recent-orders-scroll-container {
+    max-height: 480px;
+    overflow-y: auto;
+    padding-right: 6px;
+}
+
+.recent-orders-scroll-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.recent-orders-scroll-container::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 6px;
+}
+
+.recent-orders-scroll-container::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 6px;
+}
+
+.recent-orders-scroll-container::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* ==========================================================================
+   PRINTABLE PDF REPORT STYLES & MEDIA PRINT RULES
+   ========================================================================== */
+#printable-report-template {
+    display: none;
+}
+
+@media print {
+    body * {
+        visibility: hidden;
+    }
+
+    /* Show only the printable PDF report container */
+    #printable-report-template, #printable-report-template * {
+        visibility: visible;
+    }
+
+    #printable-report-template {
+        display: block !important;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        background: #ffffff !important;
+        color: #000000 !important;
+        padding: 20px;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+    .app-header, .owner-tabs, .analytics-header-card, .filter-card, .stats-cards-grid, #owner-recent-orders-container, #toast-container {
+        display: none !important;
+    }
+
+    @page {
+        size: A4;
+        margin: 12mm;
+    }
+
+    .print-logo-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+
+    .print-brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .print-logo-icon {
+        width: 42px;
+        height: 42px;
+        background: #1e293b;
+        color: #ffb700;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.3rem;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .print-brand-title {
+        font-size: 1.6rem;
+        font-weight: 800;
+        color: #0f172a;
+    }
+
+    .print-brand-title span {
+        color: #d97706;
+    }
+
+    .print-company-details {
+        text-align: right;
+        font-size: 0.82rem;
+        color: #475569;
+    }
+
+    .print-company-details h3 {
+        font-size: 1.1rem;
+        color: #0f172a;
+        margin-bottom: 2px;
+    }
+
+    .print-hr {
+        border: 0;
+        border-top: 2px solid #0f172a;
+        margin: 12px 0;
+    }
+
+    .print-report-meta {
+        margin-bottom: 20px;
+    }
+
+    .print-report-meta h2 {
+        font-size: 1.3rem;
+        font-weight: 800;
+        color: #0f172a;
+        margin-bottom: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .print-meta-grid {
+        display: flex;
+        justify-content: space-between;
+        background: #f8fafc;
+        padding: 8px 12px;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .print-summary-box {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        margin-bottom: 24px;
+        page-break-inside: avoid;
+    }
+
+    .print-stat-item {
+        background: #f1f5f9;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        padding: 10px;
+        text-align: center;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .print-stat-item .lbl {
+        font-size: 0.75rem;
+        color: #475569;
+        display: block;
+        text-transform: uppercase;
+        font-weight: 700;
+    }
+
+    .print-stat-item .val {
+        font-size: 1.15rem;
+        font-weight: 800;
+        color: #0f172a;
+    }
+
+    .print-section {
+        margin-bottom: 24px;
+        page-break-inside: avoid;
+    }
+
+    .print-section h3 {
+        font-size: 1.05rem;
+        margin-bottom: 10px;
+        color: #0f172a;
+        border-bottom: 1.5px solid #cbd5e1;
+        padding-bottom: 4px;
+    }
+
+    .print-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.85rem;
+    }
+
+    .print-table th, .print-table td {
+        border: 1px solid #cbd5e1;
+        padding: 8px 10px;
+    }
+
+    .print-table th {
+        background: #0f172a !important;
+        color: #ffffff !important;
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 0.78rem;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .print-total-row {
+        background: #e2e8f0 !important;
+        font-weight: 800;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .print-footer {
+        margin-top: 30px;
+        padding-top: 10px;
+        border-top: 1px solid #cbd5e1;
+        font-size: 0.75rem;
+        color: #64748b;
+        text-align: center;
+        page-break-inside: avoid;
+    }
 }
 
