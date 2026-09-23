@@ -28,22 +28,13 @@ class DB
                     mkdir($dbDir, 0777, true);
                 }
 
-                $isNewDb = !file_exists($dbPath) || filesize($dbPath) === 0;
-
                 try {
                     self::$instance = new PDO("sqlite:" . $dbPath);
                     self::$instance->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
                     self::$instance->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
 
-                    if ($isNewDb) {
-                        self::initSqliteTables(self::$instance);
-                    } else {
-                        try {
-                            self::$instance->exec("ALTER TABLE tables ADD COLUMN bill_requested INTEGER DEFAULT 0");
-                        } catch (PDOException $ex) {
-                            // Column already exists
-                        }
-                    }
+                    // Always ensure tables and seed data exist (handles cold starts, partial inits, and ephemeral /tmp)
+                    self::initSqliteTables(self::$instance);
                 } catch (PDOException $e) {
                     die("SQLite Database Error: " . $e->getMessage());
                 }
@@ -110,6 +101,13 @@ class DB
 
         foreach ($queries as $sql) {
             $pdo->exec($sql);
+        }
+
+        // Ensure bill_requested column exists (migration for older DB versions)
+        try {
+            $pdo->exec("ALTER TABLE tables ADD COLUMN bill_requested INTEGER DEFAULT 0");
+        } catch (PDOException $ex) {
+            // Column already exists — safe to ignore
         }
 
         // Seed default tables
